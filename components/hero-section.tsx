@@ -35,14 +35,10 @@ export default function HeroSection() {
       <div className="absolute inset-0 bg-black/30" />
 
       {/* Content overlay */}
-      <div className="relative h-full flex flex-col items-center justify-center text-center px-4 gap-4">
-        <span className="text-sm md:text-base tracking-widest text-white/90 uppercase">New</span>
+      <div className="relative h-full flex flex-col items-center justify-center text-center px-4">
         <h1 className="text-4xl md:text-6xl font-light tracking-tight text-white">
-          <span className="text-balance">Collection</span>
-          <br />
-          <span className="text-2xl md:text-4xl">2026</span>
+          NEW Collection 2026
         </h1>
-       
       </div>
 
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">

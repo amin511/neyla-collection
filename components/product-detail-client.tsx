@@ -132,8 +132,16 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
             {/* Product Images */}
             <div className="space-y-4">
               {/* Main Image */}
-              <div className="relative aspect-[3/4] bg-secondary rounded-sm overflow-hidden">
-                <Image src={mainImage || "/placeholder.svg"} alt={product.name} fill className="object-contain" priority />
+              <div className="relative bg-secondary rounded-sm overflow-hidden">
+                <Image 
+                  src={mainImage || "/placeholder.svg"} 
+                  alt={product.name} 
+                  width={0}
+                  height={0}
+                  sizes="100vw"
+                  className="w-full h-auto"
+                  priority 
+                />
                 {/* Naala Brand logo */}
                 <div className="absolute top-4 left-4">
                   <Image
@@ -171,7 +179,7 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
             </div>
 
             {/* Product Details */}
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6 font-sans">
               {/* Brand */}
 
 
@@ -264,7 +272,7 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                     src={relatedProduct.images?.[0]?.src || "/placeholder.svg"}
                     alt={relatedProduct.name}
                     fill
-                    className="object-contain transition-transform duration-300 group-hover:scale-105"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
                 <h3 className="text-sm font-medium line-clamp-2 group-hover:underline">

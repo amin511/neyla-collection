@@ -23,11 +23,11 @@ export default function ProductCard({ id, name, price, image, isOutOfStock, stoc
     <Link href={`/product/${id}`}>
       <div className="group cursor-pointer">
         {/* Image container */}
-        <div className="relative w-full aspect-[3/4] bg-secondary overflow-hidden rounded-sm mb-4">
+        <div className="relative w-full overflow-hidden rounded-sm mb-4">
           <img
             src={image || "/placeholder.svg?height=400&width=300&query=fashion%20product"}
             alt={name}
-            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-auto group-hover:scale-105 transition-transform duration-300"
           />
 
           {/* Out of stock badge */}
