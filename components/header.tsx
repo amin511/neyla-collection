@@ -91,7 +91,7 @@ export default function Header() {
             alt="NAALA"
             width={120}
             height={50}
-            className="h-12 w-auto object-contain"
+            className="h-12 w-auto object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
             priority
           />
         </Link>

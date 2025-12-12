@@ -9,6 +9,15 @@ interface ProductCardProps {
   stockStatus?: string
 }
 
+// Format price with comma as thousands separator and 2 decimal places
+function formatPrice(price: number): string {
+  const formatted = price.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  return `DA ${formatted} DZD`
+}
+
 export default function ProductCard({ id, name, price, image, isOutOfStock, stockStatus }: ProductCardProps) {
   return (
     <Link href={`/product/${id}`}>
@@ -34,7 +43,7 @@ export default function ProductCard({ id, name, price, image, isOutOfStock, stoc
           <h3 className="text-sm font-medium text-foreground line-clamp-2 group-hover:text-accent transition">
             {name}
           </h3>
-          <p className="text-base font-light text-primary">DA {price?.toLocaleString("fr-DZ")}</p>
+          <p className="text-base font-medium text-primary">{formatPrice(price || 0)}</p>
         </div>
       </div>
     </Link>

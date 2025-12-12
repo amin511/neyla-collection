@@ -8,6 +8,15 @@ import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react"
 
+// Format price with comma as thousands separator and 2 decimal places
+function formatPrice(price: number): string {
+  const formatted = price.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  return `DA ${formatted} DZD`
+}
+
 interface CartItem {
   id: number
   name: string
@@ -139,7 +148,7 @@ export default function CartPage() {
 
                       {/* Price */}
                       <p className="text-lg font-medium text-accent mb-4">
-                        {Number.parseFloat(cartItem.price).toLocaleString("fr-DZ")} DA
+                        {formatPrice(Number.parseFloat(cartItem.price))}
                       </p>
 
                       {/* Quantity Controls */}
@@ -185,7 +194,7 @@ export default function CartPage() {
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Sous-total</span>
-                    <span>{subtotal.toLocaleString("fr-DZ")} DA</span>
+                    <span>{formatPrice(subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Livraison</span>
@@ -197,7 +206,7 @@ export default function CartPage() {
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Total</span>
                     <span className="text-xl font-semibold text-accent">
-                      {total.toLocaleString("fr-DZ")} DA
+                      {formatPrice(total)}
                     </span>
                   </div>
                 </div>

@@ -7,6 +7,15 @@ import { Ruler } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 
+// Format price with comma as thousands separator and 2 decimal places
+function formatPrice(price: number): string {
+  const formatted = price.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  return `DA ${formatted} DZD`
+}
+
 interface ProductImage {
   id: number
   src: string
@@ -125,14 +134,18 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
               {/* Main Image */}
               <div className="relative aspect-[3/4] bg-secondary rounded-sm overflow-hidden">
                 <Image src={mainImage || "/placeholder.svg"} alt={product.name} fill className="object-contain" priority />
-                {/* Naala Brand watermark */}
-                <div className="absolute top-4 left-4 text-white/80 text-sm tracking-wide">
-                  Naala
-                  <br />
-                  Brand
+                {/* Naala Brand logo */}
+                <div className="absolute top-4 left-4">
+                  <Image
+                    src="/images/nalalogo.png"
+                    alt="Naala Brand"
+                    width={60}
+                    height={60}
+                    className="opacity-80"
+                  />
                 </div>
               </div>
-              
+
               {/* Thumbnail Gallery */}
               {productImages.length > 1 && (
                 <div className="flex gap-3 overflow-x-auto pb-2">
@@ -140,11 +153,10 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                     <button
                       key={image.id}
                       onClick={() => setSelectedImageIndex(index)}
-                      className={`relative flex-shrink-0 w-20 h-24 rounded-sm overflow-hidden transition-all ${
-                        selectedImageIndex === index
+                      className={`relative flex-shrink-0 w-20 h-24 rounded-sm overflow-hidden transition-all ${selectedImageIndex === index
                           ? "ring-2 ring-foreground ring-offset-2"
                           : "opacity-70 hover:opacity-100"
-                      }`}
+                        }`}
                     >
                       <Image
                         src={image.src}
@@ -158,83 +170,82 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
               )}
             </div>
 
-        {/* Product Details */}
-        <div className="flex flex-col gap-6">
-          {/* Brand */}
-          
+            {/* Product Details */}
+            <div className="flex flex-col gap-6">
+              {/* Brand */}
 
-          {/* Product Name */}
-          <h1 className="text-3xl md:text-4xl font-light text-balance">{product.name}</h1>
 
-          {/* Price */}
-          <div className="flex items-baseline gap-3">
-            <span className="text-2xl font-medium">DA {Number.parseFloat(product.price).toLocaleString()}.00 DZD</span>
-            {product.regular_price && Number.parseFloat(product.regular_price) > Number.parseFloat(product.price) && (
-              <span className="text-lg text-muted-foreground line-through">
-                DA {Number.parseFloat(product.regular_price).toLocaleString()}.00 DZD
-              </span>
-            )}
-          </div>
+              {/* Product Name */}
+              <h1 className="text-3xl md:text-4xl font-light text-balance">{product.name}</h1>
 
-          {/* Size Selection */}
-          {sizes.length > 0 && (
-            <div className="space-y-3">
-              <div className="text-sm font-medium">Taille</div>
-              <div className="flex flex-wrap gap-2">
-                {sizes.map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
-                    className={`px-6 py-2 border rounded-full text-sm transition-colors ${
-                      selectedSize === size
-                        ? "bg-foreground text-background border-foreground"
-                        : "border-border hover:border-foreground"
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
+              {/* Price */}
+              <div className="flex items-baseline gap-3">
+                <span className="text-2xl font-medium">{formatPrice(Number.parseFloat(product.price))}</span>
+                {product.regular_price && Number.parseFloat(product.regular_price) > Number.parseFloat(product.price) && (
+                  <span className="text-lg text-muted-foreground line-through">
+                    {formatPrice(Number.parseFloat(product.regular_price))}
+                  </span>
+                )}
               </div>
+
+              {/* Size Selection */}
+              {sizes.length > 0 && (
+                <div className="space-y-3">
+                  <div className="text-sm font-medium">Taille</div>
+                  <div className="flex flex-wrap gap-2">
+                    {sizes.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setSelectedSize(size)}
+                        className={`px-6 py-2 border rounded-full text-sm transition-colors ${selectedSize === size
+                            ? "bg-foreground text-background border-foreground"
+                            : "border-border hover:border-foreground"
+                          }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Size Guide */}
+              <button
+                onClick={() => setShowSizeGuide(!showSizeGuide)}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors self-start"
+              >
+                <Ruler className="w-4 h-4" />
+                Guides des tailles
+              </button>
+
+              {/* Add to Cart Button */}
+              <Button
+                size="lg"
+                className="w-full mt-4 rounded-full py-6 text-base"
+                disabled={sizes.length > 0 && !selectedSize}
+                onClick={handleAddToCart}
+              >
+                Ajouter au panier
+              </Button>
+
+              {/* Product Description */}
+              <div className="pt-6 border-t border-border">
+                <div
+                  className="prose prose-sm max-w-none text-muted-foreground"
+                  dangerouslySetInnerHTML={{ __html: product.description }}
+                />
+              </div>
+
+              {/* Stock Status */}
+              {product.stock_status === "instock" && (
+                <div className="text-sm text-green-600 dark:text-green-400">En stock</div>
+              )}
+              {product.stock_status === "outofstock" && (
+                <div className="text-sm text-red-600 dark:text-red-400">Épuisé</div>
+              )}
             </div>
-          )}
-
-          {/* Size Guide */}
-          <button
-            onClick={() => setShowSizeGuide(!showSizeGuide)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors self-start"
-          >
-            <Ruler className="w-4 h-4" />
-            Guides des tailles
-          </button>
-
-          {/* Add to Cart Button */}
-          <Button
-            size="lg"
-            className="w-full mt-4 rounded-full py-6 text-base"
-            disabled={sizes.length > 0 && !selectedSize}
-            onClick={handleAddToCart}
-          >
-            Ajouter au panier
-          </Button>
-
-          {/* Product Description */}
-          <div className="pt-6 border-t border-border">
-            <div
-              className="prose prose-sm max-w-none text-muted-foreground"
-              dangerouslySetInnerHTML={{ __html: product.description }}
-            />
           </div>
-
-          {/* Stock Status */}
-          {product.stock_status === "instock" && (
-            <div className="text-sm text-green-600 dark:text-green-400">En stock</div>
-          )}
-          {product.stock_status === "outofstock" && (
-            <div className="text-sm text-red-600 dark:text-red-400">Épuisé</div>
-          )}
         </div>
-      </div>
-      </div>
       </div>
 
       {/* Product Recommendations */}
@@ -260,7 +271,7 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                   {relatedProduct.name}
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  DA {Number.parseFloat(relatedProduct.price).toLocaleString()}.00 DZD
+                  {formatPrice(Number.parseFloat(relatedProduct.price))}
                 </p>
               </Link>
             ))}

@@ -3,6 +3,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const per_page = searchParams.get("per_page") || "8"
     const page = searchParams.get("page") || "1"
+    const orderby = searchParams.get("orderby") || "date"
+    const order = searchParams.get("order") || "desc"
 
     const storeUrl = "https://naalas-brand.com"
     const consumerKey = "ck_2257526fafa995a7d5d7fe02c46dbe1a42de245e"
@@ -14,7 +16,7 @@ export async function GET(request: Request) {
 
     // Ensure store URL doesn't have trailing slash, then add proper path
     const cleanUrl = storeUrl.replace(/\/$/, "")
-    const apiUrl = `${cleanUrl}/wp-json/wc/v3/products?per_page=${per_page}&page=${page}`
+    const apiUrl = `${cleanUrl}/wp-json/wc/v3/products?per_page=${per_page}&page=${page}&orderby=${orderby}&order=${order}`
 
     console.log("[v0] Fetching from:", apiUrl)
 

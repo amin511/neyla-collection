@@ -42,9 +42,7 @@ export default function HeroSection() {
           <br />
           <span className="text-2xl md:text-4xl">2026</span>
         </h1>
-        <p className="text-sm md:text-base text-white/80 max-w-md">
-          Discover our latest collection of elegant and contemporary designs
-        </p>
+       
       </div>
 
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
