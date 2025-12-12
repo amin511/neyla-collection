@@ -46,7 +46,7 @@ export default function ProductsSection() {
 
   if (loading) {
     return (
-      <section className="max-w-7xl mx-auto border-t border-border text-3xl py-16 px-0">
+      <section id="products" className="max-w-7xl mx-auto border-t border-border text-3xl py-16 px-0 scroll-mt-20">
         <h2 className="font-light mb-12 text-foreground mt-0 text-3xl">Meilleurs ventes 2026</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {[...Array(4)].map((_, i) => (
@@ -63,7 +63,7 @@ export default function ProductsSection() {
 
   if (error) {
     return (
-      <section className="max-w-7xl mx-auto px-4 py-16 border-t border-border">
+      <section id="products" className="max-w-7xl mx-auto px-4 py-16 border-t border-border scroll-mt-20">
         <h2 className="text-3xl font-light mb-12 text-foreground">Meilleurs ventes 2025</h2>
         <div className="p-8 bg-destructive/10 border border-destructive rounded-sm">
           <p className="text-destructive font-medium">Unable to load products: {error}</p>
@@ -82,7 +82,7 @@ export default function ProductsSection() {
 
   if (products.length === 0) {
     return (
-      <section className="max-w-7xl mx-auto px-4 py-16 border-t border-border">
+      <section id="products" className="max-w-7xl mx-auto px-4 py-16 border-t border-border scroll-mt-20">
         <h2 className="text-3xl font-light mb-12 text-foreground">Meilleurs ventes 2025</h2>
         <p className="text-muted-foreground">No products available</p>
       </section>
@@ -90,7 +90,7 @@ export default function ProductsSection() {
   }
 
   return (
-    <section className="max-w-7xl mx-auto border-t border-border text-3xl py-0 px-px">
+    <section id="products" className="max-w-7xl mx-auto border-t border-border text-3xl py-0 px-px scroll-mt-20">
       <h2 className="font-light mb-12 text-foreground mt-0 text-3xl">Meilleurs ventes 2026</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
         {products.map((product) => (

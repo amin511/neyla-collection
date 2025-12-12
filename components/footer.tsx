@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { Mail, Phone, MapPin } from "lucide-react"
+import Image from "next/image"
+import { Mail, Phone, MapPin, Instagram } from "lucide-react"
 
 export default function Footer() {
   return (
@@ -9,15 +10,30 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           {/* Brand info */}
           <div className="space-y-4">
-            <div className="flex flex-col items-start gap-1">
-              <div className="w-8 h-8 border-2 border-primary flex items-center justify-center">
-                <div className="w-4 h-4 border border-primary transform rotate-45"></div>
-              </div>
-              <span className="text-sm font-light tracking-widest text-primary">{"NAALA"}</span>
-            </div>
+            <Link href="/" className="block">
+              <Image
+                src="/images/nalalogo.png"
+                alt="NAALA"
+                width={120}
+                height={50}
+                className="h-12 w-auto object-contain"
+              />
+            </Link>
             <p className="text-sm text-muted-foreground">
               Elegant fashion and lifestyle collections for the modern woman.
             </p>
+            {/* Social Media */}
+            <div className="flex gap-3 pt-2">
+              <a
+                href="https://www.instagram.com/naalasbrand/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-pink-500 transition"
+                aria-label="Instagram"
+              >
+                <Instagram className="w-5 h-5" />
+              </a>
+            </div>
           </div>
 
           {/* Quick links */}
@@ -26,17 +42,12 @@ export default function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <Link href="/products" className="hover:text-foreground transition">
-                  All Products
+                  Tous les Produits
                 </Link>
               </li>
               <li>
-                <Link href="/new" className="hover:text-foreground transition">
-                  New Arrivals
-                </Link>
-              </li>
-              <li>
-                <Link href="/sale" className="hover:text-foreground transition">
-                  Sale
+                <Link href="/#products" className="hover:text-foreground transition">
+                  Nouveautés
                 </Link>
               </li>
             </ul>
@@ -47,19 +58,19 @@ export default function Footer() {
             <h3 className="font-medium text-foreground text-sm uppercase tracking-wide">Support</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link href="/contact" className="hover:text-foreground transition">
-                  Contact Us
-                </Link>
+                <a
+                  href="https://www.instagram.com/naalasbrand/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground transition"
+                >
+                  Contactez-nous
+                </a>
               </li>
               <li>
-                <Link href="/shipping" className="hover:text-foreground transition">
-                  Shipping Info
-                </Link>
-              </li>
-              <li>
-                <Link href="/returns" className="hover:text-foreground transition">
-                  Returns
-                </Link>
+                <a href="tel:+213770499357" className="hover:text-foreground transition">
+                  Appelez-nous
+                </a>
               </li>
             </ul>
           </div>
@@ -70,15 +81,31 @@ export default function Footer() {
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition">
                 <Phone className="w-4 h-4 flex-shrink-0" />
-                <a href="tel:+213xxx">+213 (0) XXX XXX</a>
+                <a href="tel:+213770499357">07 70 49 93 57</a>
               </li>
               <li className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition">
                 <Mail className="w-4 h-4 flex-shrink-0" />
-                <a href="mailto:info@leila.dz">info@leila.dz</a>
+                <a href="mailto:Naalasbrand@gmail.com">Naalasbrand@gmail.com</a>
               </li>
-              <li className="flex items-start gap-2 text-muted-foreground">
+              <li className="flex items-start gap-2 text-muted-foreground hover:text-foreground transition">
                 <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <span>Algiers, Bordj el kiffan centre  </span>
+                <a
+                  href="https://maps.app.goo.gl/fqYdbdd2hrBqNUxX6"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Algiers, Bordj el kiffan centre
+                </a>
+              </li>
+              <li className="flex items-center gap-2 text-muted-foreground hover:text-pink-500 transition">
+                <Instagram className="w-4 h-4 flex-shrink-0" />
+                <a
+                  href="https://www.instagram.com/naalasbrand/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  @naalasbrand
+                </a>
               </li>
             </ul>
           </div>
@@ -86,15 +113,7 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-          <p>© 2025 NAALA . All rights reserved.</p>
-          <div className="flex gap-6">
-            <Link href="/privacy" className="hover:text-foreground transition">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="hover:text-foreground transition">
-              Terms of Service
-            </Link>
-          </div>
+          <p>© 2025 NAALA. Tous droits réservés.</p>
         </div>
       </div>
     </footer>

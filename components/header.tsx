@@ -1,13 +1,25 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Menu, Search, ShoppingCart, X } from "lucide-react"
+import { Menu, Search, ShoppingCart, X, ChevronDown, ChevronRight } from "lucide-react"
+
+interface Category {
+  id: number
+  name: string
+  slug: string
+  parent: number
+  count: number
+}
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [cartCount, setCartCount] = useState(0)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [expandedCategories, setExpandedCategories] = useState<number[]>([])
+  const [loadingCategories, setLoadingCategories] = useState(false)
 
   useEffect(() => {
     const checkCart = () => {
@@ -26,9 +38,42 @@ export default function Header() {
     }
   }, [])
 
+  // Fetch categories when menu opens
+  useEffect(() => {
+    if (isMenuOpen && categories.length === 0 && !loadingCategories) {
+      setLoadingCategories(true)
+      fetch("/api/categories")
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setCategories(data)
+          }
+        })
+        .catch((err) => console.error("Error fetching categories:", err))
+        .finally(() => setLoadingCategories(false))
+    }
+  }, [isMenuOpen, categories.length, loadingCategories])
+
+  // Get primary categories (parent = 0)
+  const primaryCategories = categories.filter((cat) => cat.parent === 0)
+
+  // Get child categories for a parent
+  const getChildCategories = (parentId: number) => {
+    return categories.filter((cat) => cat.parent === parentId)
+  }
+
+  // Toggle category expansion
+  const toggleCategory = (categoryId: number) => {
+    setExpandedCategories((prev) =>
+      prev.includes(categoryId)
+        ? prev.filter((id) => id !== categoryId)
+        : [...prev, categoryId]
+    )
+  }
+
   return (
     <header className="border-b border-border bg-background sticky top-0 z-40">
-      <div className="bg-secondary text-secondary-foreground text-center py-2 text-sm">LIVRAISONS8 WILAYAS 📦</div>
+      <div className="bg-secondary text-secondary-foreground text-center py-2 text-sm">LIVRAISON 62 WILAYAS 📦</div>
 
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         <button
@@ -41,12 +86,14 @@ export default function Header() {
 
         {/* Logo (centered) */}
         <Link href="/" className="absolute left-1/2 -translate-x-1/2">
-          <div className="flex flex-col items-center gap-1">
-            <div className="w-10 h-10 border-2 border-primary flex items-center justify-center">
-              <div className="w-5 h-5 border border-primary transform rotate-45"></div>
-            </div>
-            <span className="text-base font-light tracking-widest text-primary">{""}</span>
-          </div>
+          <Image
+            src="/images/nalalogo.png"
+            alt="NAALA"
+            width={120}
+            height={50}
+            className="h-12 w-auto object-contain"
+            priority
+          />
         </Link>
 
         <div className="flex items-center gap-4">
@@ -91,54 +138,148 @@ export default function Header() {
           />
 
           {/* Sidebar */}
-          <nav className="fixed top-0 left-0 h-full w-64 bg-background border-r border-border z-50 animate-in slide-in-from-left duration-300">
+          <nav className="fixed top-0 left-0 h-full w-72 bg-background border-r border-border z-50 animate-in slide-in-from-left duration-300 overflow-y-auto">
             <div className="p-6">
               {/* Close button */}
               <button
                 onClick={() => setIsMenuOpen(false)}
-                className="mb-8 text-foreground hover:text-accent transition-colors"
+                className="mb-8 text-foreground hover:text-accent transition-colors animate-fade-in-up"
+                style={{ animationDelay: '100ms' }}
                 aria-label="Close menu"
               >
                 <X className="w-6 h-6" />
               </button>
 
               {/* Menu items */}
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <Link
                   href="/"
-                  className="block text-base font-light hover:text-accent transition-colors"
+                  className="block text-base font-light hover:text-accent transition-colors animate-fade-in-up opacity-0"
+                  style={{ animationDelay: '150ms', animationFillMode: 'forwards' }}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Accueil
                 </Link>
                 <Link
-                  href="/products"
-                  className="block text-base font-light hover:text-accent transition-colors"
+                  href="/#products"
+                  className="block text-base font-light hover:text-accent transition-colors animate-fade-in-up opacity-0"
+                  style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Nouvelle Collection
                 </Link>
                 <Link
                   href="/products"
-                  className="block text-base font-light hover:text-accent transition-colors"
+                  className="block text-base font-light hover:text-accent transition-colors animate-fade-in-up opacity-0"
+                  style={{ animationDelay: '250ms', animationFillMode: 'forwards' }}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Tous les Produits
                 </Link>
-                <Link
-                  href="/about"
-                  className="block text-base font-light hover:text-accent transition-colors"
+
+                {/* Divider */}
+                <div className="border-t border-border my-4 animate-fade-in-up opacity-0" style={{ animationDelay: '300ms', animationFillMode: 'forwards' }} />
+
+                {/* Categories Section */}
+                <div className="animate-fade-in-up opacity-0" style={{ animationDelay: '350ms', animationFillMode: 'forwards' }}>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                    Catégories
+                  </h3>
+
+                  {loadingCategories ? (
+                    <div className="space-y-2">
+                      {[...Array(4)].map((_, i) => (
+                        <div key={i} className="h-6 bg-muted animate-pulse rounded" />
+                      ))}
+                    </div>
+                  ) : primaryCategories.length > 0 ? (
+                    <div className="space-y-1">
+                      {primaryCategories.map((category) => {
+                        const children = getChildCategories(category.id)
+                        const hasChildren = children.length > 0
+                        const isExpanded = expandedCategories.includes(category.id)
+
+                        return (
+                          <div key={category.id}>
+                            <div className="flex items-center">
+                              {hasChildren ? (
+                                <button
+                                  onClick={() => toggleCategory(category.id)}
+                                  className="flex items-center justify-between w-full py-2 text-sm font-medium text-foreground hover:text-accent transition-colors"
+                                >
+                                  <span>{category.name}</span>
+                                  {isExpanded ? (
+                                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                                  ) : (
+                                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                  )}
+                                </button>
+                              ) : (
+                                <Link
+                                  href={`/products?category=${category.slug}`}
+                                  className="block w-full py-2 text-sm font-medium text-foreground hover:text-accent transition-colors"
+                                  onClick={() => setIsMenuOpen(false)}
+                                >
+                                  {category.name}
+                                </Link>
+                              )}
+                            </div>
+
+                            {/* Child Categories */}
+                            {hasChildren && isExpanded && (
+                              <div className="ml-4 border-l border-border pl-3 space-y-1 animate-in slide-in-from-top-2 duration-200">
+                                {/* Link to view all in parent category */}
+                                <Link
+                                  href={`/products?category=${category.slug}`}
+                                  className="block py-1.5 text-sm text-muted-foreground hover:text-accent transition-colors"
+                                  onClick={() => setIsMenuOpen(false)}
+                                >
+                                  Voir tout
+                                </Link>
+                                {children.map((child) => (
+                                  <Link
+                                    key={child.id}
+                                    href={`/products?category=${child.slug}`}
+                                    className="block py-1.5 text-sm text-muted-foreground hover:text-accent transition-colors"
+                                    onClick={() => setIsMenuOpen(false)}
+                                  >
+                                    {child.name}
+                                  </Link>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Aucune catégorie</p>
+                  )}
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-border my-4 animate-fade-in-up opacity-0" style={{ animationDelay: '400ms', animationFillMode: 'forwards' }} />
+
+                <a
+                  href="https://www.instagram.com/naalasbrand/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-base font-light hover:text-accent transition-colors animate-fade-in-up opacity-0"
+                  style={{ animationDelay: '450ms', animationFillMode: 'forwards' }}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   À Propos
-                </Link>
-                <Link
-                  href="/contact"
-                  className="block text-base font-light hover:text-accent transition-colors"
+                </a>
+                <a
+                  href="https://www.instagram.com/naalasbrand/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-base font-light hover:text-accent transition-colors animate-fade-in-up opacity-0"
+                  style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Contact
-                </Link>
+                </a>
               </div>
             </div>
           </nav>

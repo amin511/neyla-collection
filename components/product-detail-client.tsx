@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { Ruler } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
@@ -29,9 +30,30 @@ interface Product {
   stock_status: string
 }
 
-export default function ProductDetailClient({ product }: { product: Product }) {
+interface RelatedProduct {
+  id: number
+  name: string
+  price: string
+  images: ProductImage[]
+}
+
+interface Category {
+  id: number
+  name: string
+  slug: string
+  count: number
+}
+
+interface ProductDetailClientProps {
+  product: Product
+  relatedProducts?: RelatedProduct[]
+  categories?: Category[]
+}
+
+export default function ProductDetailClient({ product, relatedProducts = [], categories = [] }: ProductDetailClientProps) {
   const [selectedSize, setSelectedSize] = useState<string>("")
   const [showSizeGuide, setShowSizeGuide] = useState(false)
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const router = useRouter()
 
   // Get size attribute
@@ -40,8 +62,9 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   )
   const sizes = sizeAttribute?.options || []
 
-  // Get main image
-  const mainImage = product.images?.[0]?.src || "/placeholder.svg?height=600&width=600"
+  // Get all images
+  const productImages = product.images?.length > 0 ? product.images : [{ id: 0, src: "/placeholder.svg?height=600&width=600", alt: product.name }]
+  const mainImage = productImages[selectedImageIndex]?.src || "/placeholder.svg?height=600&width=600"
 
   // Function to handle add to cart and navigate to checkout
   const handleAddToCart = () => {
@@ -68,17 +91,72 @@ export default function ProductDetailClient({ product }: { product: Product }) {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Product Image */}
-        <div className="relative aspect-[3/4] bg-muted rounded-sm overflow-hidden">
-          <Image src={mainImage || "/placeholder.svg"} alt={product.name} fill className="object-cover" priority />
-          {/* Leila Collection watermark */}
-          <div className="absolute top-4 left-4 text-white/80 text-sm tracking-wide">
-            Leila
-            <br />
-            Collection
-          </div>
-        </div>
+      <div className="flex gap-8">
+        {/* Categories Sidebar */}
+        {categories.length > 0 && (
+          <aside className="hidden lg:block w-56 flex-shrink-0">
+            <div className="sticky top-24">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+                Catégories
+              </h3>
+              <nav className="space-y-1">
+                {categories.map((category) => (
+                  <Link
+                    key={category.id}
+                    href={`/products?category=${category.slug}`}
+                    className="flex items-center justify-between py-2 px-3 text-sm rounded-sm hover:bg-muted transition-colors group"
+                  >
+                    <span className="group-hover:text-foreground">{category.name}</span>
+                    <span className="text-xs text-muted-foreground bg-muted group-hover:bg-background px-2 py-0.5 rounded-full">
+                      {category.count}
+                    </span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          </aside>
+        )}
+
+        {/* Main Content */}
+        <div className="flex-1 min-w-0">
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Product Images */}
+            <div className="space-y-4">
+              {/* Main Image */}
+              <div className="relative aspect-[3/4] bg-muted rounded-sm overflow-hidden">
+                <Image src={mainImage || "/placeholder.svg"} alt={product.name} fill className="object-cover" priority />
+                {/* Naala Brand watermark */}
+                <div className="absolute top-4 left-4 text-white/80 text-sm tracking-wide">
+                  Naala
+                  <br />
+                  Brand
+                </div>
+              </div>
+              
+              {/* Thumbnail Gallery */}
+              {productImages.length > 1 && (
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {productImages.map((image, index) => (
+                    <button
+                      key={image.id}
+                      onClick={() => setSelectedImageIndex(index)}
+                      className={`relative flex-shrink-0 w-20 h-24 rounded-sm overflow-hidden transition-all ${
+                        selectedImageIndex === index
+                          ? "ring-2 ring-foreground ring-offset-2"
+                          : "opacity-70 hover:opacity-100"
+                      }`}
+                    >
+                      <Image
+                        src={image.src}
+                        alt={image.alt || `${product.name} - Image ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
         {/* Product Details */}
         <div className="flex flex-col gap-6">
@@ -156,6 +234,39 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           )}
         </div>
       </div>
+      </div>
+      </div>
+
+      {/* Product Recommendations */}
+      {relatedProducts.length > 0 && (
+        <div className="mt-16 pt-12 border-t border-border">
+          <h2 className="text-2xl font-light mb-8 text-center">Vous aimerez aussi</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            {relatedProducts.slice(0, 4).map((relatedProduct) => (
+              <Link
+                key={relatedProduct.id}
+                href={`/product/${relatedProduct.id}`}
+                className="group"
+              >
+                <div className="relative aspect-[3/4] bg-muted rounded-sm overflow-hidden mb-3">
+                  <Image
+                    src={relatedProduct.images?.[0]?.src || "/placeholder.svg"}
+                    alt={relatedProduct.name}
+                    fill
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+                <h3 className="text-sm font-medium line-clamp-2 group-hover:underline">
+                  {relatedProduct.name}
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  DA {Number.parseFloat(relatedProduct.price).toLocaleString()}.00 DZD
+                </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

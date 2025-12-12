@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { User, Phone, MapPin, Minus, Plus } from "lucide-react"
+import { User, Phone, MapPin, Minus, Plus, ArrowLeft } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 
@@ -217,15 +217,25 @@ export default function CheckoutForm() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-lg mx-auto px-4">
+        {/* Back Button */}
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span>Retour</span>
+        </button>
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Quantity Card */}
           <div className="bg-white rounded-lg p-6 shadow-sm">
             <label className="block text-sm font-medium mb-3">Quantité</label>
-            <div className="flex border border-gray-300 rounded-md w-32 overflow-hidden items-center">
+            <div className="flex items-center border border-gray-300 rounded-md w-36">
               <button
                 type="button"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="px-4 py-2 hover:bg-gray-100 transition-colors"
+                className="px-3 py-2 hover:bg-gray-100 transition-colors border-r border-gray-300"
               >
                 <Minus className="w-4 h-4" />
               </button>
@@ -233,12 +243,12 @@ export default function CheckoutForm() {
                 type="number"
                 value={quantity}
                 onChange={(e) => setQuantity(Math.max(1, Number.parseInt(e.target.value) || 1))}
-                className="flex-1 py-2 bg-transparent border-x border-gray-300 focus:outline-none px-2.5 mx-5 border-0 text-center"
+                className="w-12 py-2 bg-transparent focus:outline-none text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <button
                 type="button"
                 onClick={() => setQuantity(quantity + 1)}
-                className="px-4 py-2 hover:bg-gray-100 transition-colors"
+                className="px-3 py-2 hover:bg-gray-100 transition-colors border-l border-gray-300"
               >
                 <Plus className="w-4 h-4" />
               </button>

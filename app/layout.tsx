@@ -8,26 +8,12 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "LEILA - Fashion & Lifestyle",
+  title: "NAALA - Fashion & Lifestyle",
   description:
-    "Discover elegant fashion and lifestyle collections from LEILA. New collection 2025 featuring traditional and contemporary designs.",
-  generator: "v0.app",
+    "Discover elegant fashion and lifestyle collections from NAALA. New collection 2025 featuring traditional and contemporary designs.",
   icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
-    apple: "/apple-icon.png",
+    icon: "/favicon.svg",
+    apple: "/favicon.svg",
   },
 }
 
