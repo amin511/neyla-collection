@@ -1,11 +1,16 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Assistant } from "next/font/google"
+import { Assistant, Playfair_Display } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
 const assistant = Assistant({ 
   subsets: ["latin"],
+})
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
 })
 
 export const metadata: Metadata = {
@@ -25,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`antialiased ${assistant.className}`}>
+      <body className={`antialiased ${assistant.className} ${playfair.variable}`}>
         {children}
         <Analytics />
       </body>

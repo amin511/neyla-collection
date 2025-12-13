@@ -3,7 +3,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const per_page = searchParams.get("per_page") || "8"
     const page = searchParams.get("page") || "1"
-    const orderby = searchParams.get("orderby") || "date"
+    const orderby = searchParams.get("orderby") || "modified"
     const order = searchParams.get("order") || "desc"
 
     const storeUrl = "https://naalas-brand.com"

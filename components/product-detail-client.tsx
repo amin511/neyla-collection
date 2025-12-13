@@ -105,15 +105,19 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
         {categories.length > 0 && (
           <aside className="hidden lg:block w-56 flex-shrink-0">
             <div className="sticky top-24">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+              <h3 
+                className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4 opacity-0 animate-fade-in-rise"
+                style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}
+              >
                 Catégories
               </h3>
               <nav className="space-y-1">
-                {categories.map((category) => (
+                {categories.map((category, index) => (
                   <Link
                     key={category.id}
                     href={`/products?category=${category.slug}`}
-                    className="flex items-center justify-between py-2 px-3 text-sm rounded-sm hover:bg-muted transition-colors group"
+                    className="flex items-center justify-between py-2 px-3 text-sm rounded-sm hover:bg-muted transition-colors group opacity-0 animate-fade-in-rise"
+                    style={{ animationDelay: `${150 + index * 50}ms`, animationFillMode: 'forwards' }}
                   >
                     <span className="group-hover:text-foreground">{category.name}</span>
                     <span className="text-xs text-muted-foreground bg-muted group-hover:bg-background px-2 py-0.5 rounded-full">
@@ -130,7 +134,10 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
         <div className="flex-1 min-w-0">
           <div className="grid md:grid-cols-2 gap-8">
             {/* Product Images */}
-            <div className="space-y-4">
+            <div 
+              className="space-y-4 opacity-0 animate-fade-in-rise"
+              style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}
+            >
               {/* Main Image */}
               <div className="relative bg-secondary rounded-sm overflow-hidden">
                 <Image 
@@ -180,14 +187,19 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
 
             {/* Product Details */}
             <div className="flex flex-col gap-6 font-sans">
-              {/* Brand */}
-
-
               {/* Product Name */}
-              <h1 className="text-3xl md:text-4xl font-light text-balance">{product.name}</h1>
+              <h1 
+                className="text-3xl md:text-4xl font-light text-balance opacity-0 animate-fade-in-rise"
+                style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}
+              >
+                {product.name}
+              </h1>
 
               {/* Price */}
-              <div className="flex items-baseline gap-3">
+              <div 
+                className="flex items-baseline gap-3 opacity-0 animate-fade-in-rise"
+                style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}
+              >
                 <span className="text-2xl font-medium">{formatPrice(Number.parseFloat(product.price))}</span>
                 {product.regular_price && Number.parseFloat(product.regular_price) > Number.parseFloat(product.price) && (
                   <span className="text-lg text-muted-foreground line-through">
@@ -198,7 +210,10 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
 
               {/* Size Selection */}
               {sizes.length > 0 && (
-                <div className="space-y-3">
+                <div 
+                  className="space-y-3 opacity-0 animate-fade-in-rise"
+                  style={{ animationDelay: '400ms', animationFillMode: 'forwards' }}
+                >
                   <div className="text-sm font-medium">Taille</div>
                   <div className="flex flex-wrap gap-2">
                     {sizes.map((size) => (
@@ -227,14 +242,19 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
               </button>
 
               {/* Add to Cart Button */}
-              <Button
-                size="lg"
-                className="w-full mt-4 rounded-full py-6 text-base"
-                disabled={sizes.length > 0 && !selectedSize}
-                onClick={handleAddToCart}
+              <div 
+                className="opacity-0 animate-fade-in-rise"
+                style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}
               >
-                Ajouter au panier
-              </Button>
+                <Button
+                  size="lg"
+                  className="w-full mt-4 rounded-full py-6 text-base"
+                  disabled={sizes.length > 0 && !selectedSize}
+                  onClick={handleAddToCart}
+                >
+                  Ajouter au panier
+                </Button>
+              </div>
 
               {/* Product Description */}
               <div className="pt-6 border-t border-border">
@@ -259,13 +279,19 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
       {/* Product Recommendations */}
       {relatedProducts.length > 0 && (
         <div className="mt-16 pt-12 border-t border-border">
-          <h2 className="text-2xl font-light mb-8 text-center">Vous aimerez aussi</h2>
+          <h2 
+            className="text-2xl font-light mb-8 text-center opacity-0 animate-fade-in-rise"
+            style={{ animationDelay: '600ms', animationFillMode: 'forwards' }}
+          >
+            Vous aimerez aussi
+          </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {relatedProducts.slice(0, 4).map((relatedProduct) => (
+            {relatedProducts.slice(0, 4).map((relatedProduct, index) => (
               <Link
                 key={relatedProduct.id}
                 href={`/product/${relatedProduct.id}`}
-                className="group"
+                className="group opacity-0 animate-fade-in-rise"
+                style={{ animationDelay: `${700 + index * 100}ms`, animationFillMode: 'forwards' }}
               >
                 <div className="relative aspect-[3/4] bg-secondary rounded-sm overflow-hidden mb-3">
                   <Image

@@ -7,6 +7,7 @@ interface ProductCardProps {
   image: string
   isOutOfStock?: boolean
   stockStatus?: string
+  index?: number
 }
 
 // Format price with comma as thousands separator and 2 decimal places
@@ -18,10 +19,15 @@ function formatPrice(price: number): string {
   return `DA ${formatted} DZD`
 }
 
-export default function ProductCard({ id, name, price, image, isOutOfStock, stockStatus }: ProductCardProps) {
+export default function ProductCard({ id, name, price, image, isOutOfStock, stockStatus, index = 0 }: ProductCardProps) {
+  const delay = 100 + (index * 80) // Staggered delay: 100ms, 180ms, 260ms, etc.
+
   return (
     <Link href={`/product/${id}`}>
-      <div className="group cursor-pointer">
+      <div
+        className="group cursor-pointer opacity-0 animate-fade-in-rise"
+        style={{ animationDelay: `${delay}ms`, animationFillMode: 'forwards' }}
+      >
         {/* Image container */}
         <div className="relative w-full overflow-hidden rounded-sm mb-4">
           <img
@@ -40,7 +46,7 @@ export default function ProductCard({ id, name, price, image, isOutOfStock, stoc
 
         {/* Product info */}
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-foreground line-clamp-2 group-hover:text-accent transition">
+          <h3 className="text-base font-semibold text-foreground line-clamp-2 group-hover:text-accent transition font-[family-name:var(--font-playfair)]">
             {name}
           </h3>
           <p className="text-base font-medium text-primary">{formatPrice(price || 0)}</p>

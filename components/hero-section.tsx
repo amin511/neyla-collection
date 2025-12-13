@@ -36,7 +36,10 @@ export default function HeroSection() {
 
       {/* Content overlay */}
       <div className="relative h-full flex flex-col items-center justify-center text-center px-4">
-        <h1 className="text-4xl md:text-6xl font-light tracking-tight text-white">
+        <h1
+          className="text-4xl md:text-6xl font-light tracking-tight text-white opacity-0 animate-fade-in-rise"
+          style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}
+        >
           NEW Collection 2026
         </h1>
       </div>

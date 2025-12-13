@@ -9,7 +9,10 @@ export default function Footer() {
         {/* Main footer content */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           {/* Brand info */}
-          <div className="space-y-4">
+          <div
+            className="space-y-4 opacity-0 animate-fade-in-rise"
+            style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}
+          >
             <Link href="/" className="block">
               <Image
                 src="/images/nalalogo.png"
@@ -37,7 +40,10 @@ export default function Footer() {
           </div>
 
           {/* Quick links */}
-          <div className="space-y-4">
+          <div
+            className="space-y-4 opacity-0 animate-fade-in-rise"
+            style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}
+          >
             <h3 className="font-medium text-foreground text-sm uppercase tracking-wide">Shop</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
@@ -54,7 +60,10 @@ export default function Footer() {
           </div>
 
           {/* Customer service */}
-          <div className="space-y-4">
+          <div
+            className="space-y-4 opacity-0 animate-fade-in-rise"
+            style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}
+          >
             <h3 className="font-medium text-foreground text-sm uppercase tracking-wide">Support</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
@@ -76,7 +85,10 @@ export default function Footer() {
           </div>
 
           {/* Contact */}
-          <div className="space-y-4">
+          <div
+            className="space-y-4 opacity-0 animate-fade-in-rise"
+            style={{ animationDelay: '400ms', animationFillMode: 'forwards' }}
+          >
             <h3 className="font-medium text-foreground text-sm uppercase tracking-wide">Contact</h3>
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition">
@@ -112,7 +124,10 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
+        <div
+          className="border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground opacity-0 animate-fade-in-rise"
+          style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}
+        >
           <p>© 2025 NAALA. Tous droits réservés.</p>
         </div>
       </div>
