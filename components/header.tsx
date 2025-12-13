@@ -73,7 +73,7 @@ export default function Header() {
 
   return (
     <header className="border-b border-border bg-background sticky top-0 z-40">
-      <div className="bg-secondary text-secondary-foreground text-center py-2 text-sm">LIVRAISON 62 WILAYAS 📦</div>
+      <div className="bg-secondary text-secondary-foreground text-center py-2 text-sm">Livraison partout en Algérie 📦</div>
 
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         <button

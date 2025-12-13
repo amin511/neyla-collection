@@ -7,7 +7,8 @@ export async function GET() {
     const credentials = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64")
 
     const cleanUrl = storeUrl.replace(/\/$/, "")
-    const apiUrl = `${cleanUrl}/wp-json/wc/v3/products/categories?per_page=100&hide_empty=true`
+    // Fetch all categories (including empty ones) to ensure new categories show up
+    const apiUrl = `${cleanUrl}/wp-json/wc/v3/products/categories?per_page=100`
 
     const response = await fetch(apiUrl, {
       headers: {
@@ -24,14 +25,44 @@ export async function GET() {
 
     const categories = await response.json()
 
-    // Transform categories data
-    const transformedCategories = (categories || []).map((category: any) => ({
-      id: category.id,
-      name: category.name,
-      slug: category.slug,
-      parent: category.parent,
-      count: category.count,
-    }))
+    // Define the desired order for parent categories
+    const categoryOrder = [
+      "collection",
+      "caftans", 
+      "ensembles-abayas",
+      "accessoires"
+    ]
+
+    // Transform categories data and filter out "Uncategorized"
+    const transformedCategories = (categories || [])
+      .filter((category: any) => 
+        category.slug !== "uncategorized" && 
+        category.slug !== "non-classe" &&
+        category.name.toLowerCase() !== "uncategorized"
+      )
+      .map((category: any) => ({
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+        parent: category.parent,
+        count: category.count,
+      }))
+      .sort((a: any, b: any) => {
+        // Sort parent categories by defined order
+        if (a.parent === 0 && b.parent === 0) {
+          const aIndex = categoryOrder.indexOf(a.slug.toLowerCase())
+          const bIndex = categoryOrder.indexOf(b.slug.toLowerCase())
+          // If both are in the order list, sort by order
+          if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex
+          // If only a is in the list, a comes first
+          if (aIndex !== -1) return -1
+          // If only b is in the list, b comes first
+          if (bIndex !== -1) return 1
+          // Otherwise sort alphabetically
+          return a.name.localeCompare(b.name)
+        }
+        return 0
+      })
 
     return Response.json(transformedCategories)
   } catch (error) {

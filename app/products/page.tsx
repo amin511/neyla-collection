@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import ProductCard from "@/components/product-card"
@@ -15,17 +16,50 @@ interface Product {
   stock_status: string
 }
 
+interface Category {
+  id: number
+  name: string
+  slug: string
+  parent: number
+}
+
 export default function ProductsPage() {
+  const searchParams = useSearchParams()
+  const categorySlug = searchParams.get("category")
+  
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [categoryName, setCategoryName] = useState<string | null>(null)
+
+  // Fetch category name if category slug is provided
+  useEffect(() => {
+    if (categorySlug) {
+      fetch("/api/categories")
+        .then((res) => res.json())
+        .then((categories: Category[]) => {
+          const category = categories.find((cat) => cat.slug === categorySlug)
+          if (category) {
+            setCategoryName(category.name)
+          }
+        })
+        .catch((err) => console.error("Error fetching category:", err))
+    } else {
+      setCategoryName(null)
+    }
+  }, [categorySlug])
 
   useEffect(() => {
-    const fetchAllProducts = async () => {
+    const fetchProducts = async () => {
       try {
         setLoading(true)
-        // Fetch more products - up to 100
-        const response = await fetch("/api/products?per_page=100&page=1")
+        // Build API URL with category filter if provided
+        let apiUrl = "/api/products?per_page=100&page=1"
+        if (categorySlug) {
+          apiUrl += `&category=${encodeURIComponent(categorySlug)}`
+        }
+        
+        const response = await fetch(apiUrl)
         const data = await response.json()
 
         if (!response.ok) {
@@ -34,7 +68,7 @@ export default function ProductsPage() {
           throw new Error(errorMsg)
         }
 
-        console.log("[v0] All products fetched:", data.length)
+        console.log("[v0] Products fetched:", data.length)
         setProducts(data)
         setError(null)
       } catch (err) {
@@ -46,8 +80,8 @@ export default function ProductsPage() {
       }
     }
 
-    fetchAllProducts()
-  }, [])
+    fetchProducts()
+  }, [categorySlug])
 
   return (
     <main className="min-h-screen bg-background">
@@ -65,8 +99,17 @@ export default function ProductsPage() {
 
         {/* Page Title */}
         <h1 className="text-3xl md:text-4xl font-light mb-8 text-foreground">
-          Tous les Produits
+          {categoryName || "Tous les Produits"}
         </h1>
+        
+        {categorySlug && (
+          <Link
+            href="/products"
+            className="inline-flex items-center gap-2 text-sm text-accent hover:underline mb-6"
+          >
+            Voir tous les produits
+          </Link>
+        )}
 
         {/* Products Grid */}
         {loading ? (
@@ -84,7 +127,22 @@ export default function ProductsPage() {
             <p className="text-destructive font-medium">Impossible de charger les produits: {error}</p>
           </div>
         ) : products.length === 0 ? (
-          <p className="text-muted-foreground text-center py-12">Aucun produit disponible</p>
+          <div className="text-center py-12">
+            <p className="text-muted-foreground mb-4">
+              {categoryName 
+                ? `Aucun produit disponible dans la catégorie "${categoryName}"`
+                : "Aucun produit disponible"
+              }
+            </p>
+            {categorySlug && (
+              <Link
+                href="/products"
+                className="inline-flex items-center gap-2 text-accent hover:underline"
+              >
+                Voir tous les produits
+              </Link>
+            )}
+          </div>
         ) : (
           <>
             <p className="text-muted-foreground mb-6">{products.length} produit{products.length > 1 ? 's' : ''}</p>

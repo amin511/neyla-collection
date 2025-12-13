@@ -5,6 +5,7 @@ export async function GET(request: Request) {
     const page = searchParams.get("page") || "1"
     const orderby = searchParams.get("orderby") || "modified"
     const order = searchParams.get("order") || "desc"
+    const category = searchParams.get("category") || ""
 
     const storeUrl = "https://naalas-brand.com"
     const consumerKey = "ck_2257526fafa995a7d5d7fe02c46dbe1a42de245e"
@@ -16,7 +17,28 @@ export async function GET(request: Request) {
 
     // Ensure store URL doesn't have trailing slash, then add proper path
     const cleanUrl = storeUrl.replace(/\/$/, "")
-    const apiUrl = `${cleanUrl}/wp-json/wc/v3/products?per_page=${per_page}&page=${page}&orderby=${orderby}&order=${order}`
+    let apiUrl = `${cleanUrl}/wp-json/wc/v3/products?per_page=${per_page}&page=${page}&orderby=${orderby}&order=${order}`
+    
+    // Add category filter if provided (WooCommerce accepts category slug)
+    if (category) {
+      // First, we need to get the category ID from the slug
+      const categoriesUrl = `${cleanUrl}/wp-json/wc/v3/products/categories?slug=${category}`
+      const catResponse = await fetch(categoriesUrl, {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          "Content-Type": "application/json",
+        },
+      })
+      
+      if (catResponse.ok) {
+        const categories = await catResponse.json()
+        if (categories.length > 0) {
+          const categoryId = categories[0].id
+          apiUrl += `&category=${categoryId}`
+          console.log("[v0] Filtering by category:", category, "ID:", categoryId)
+        }
+      }
+    }
 
     console.log("[v0] Fetching from:", apiUrl)
 
