@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
@@ -23,7 +23,7 @@ interface Category {
   parent: number
 }
 
-export default function ProductsPage() {
+function ProductsContent() {
   const searchParams = useSearchParams()
   const categorySlug = searchParams.get("category")
   
@@ -164,6 +164,34 @@ export default function ProductsPage() {
 
       <Footer />
     </main>
+  )
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-background">
+          <Header />
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            <div className="h-8 bg-muted rounded w-32 mb-8 animate-pulse"></div>
+            <div className="h-10 bg-muted rounded w-64 mb-8 animate-pulse"></div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="aspect-[3/4] bg-muted rounded-sm mb-4" />
+                  <div className="h-4 bg-muted rounded mb-2" />
+                  <div className="h-4 bg-muted rounded w-2/3" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <Footer />
+        </main>
+      }
+    >
+      <ProductsContent />
+    </Suspense>
   )
 }
 
