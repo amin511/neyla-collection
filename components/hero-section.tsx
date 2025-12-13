@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 
 const HERO_IMAGES = [
-  "/images/whatsapp1.jpeg",
+  "/images/WhatsApp1.jpeg",
   "/images/WhatsApp2.jpeg",
 ]
 
