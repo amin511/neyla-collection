@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Assistant, Playfair_Display } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
+import { siteConfig } from "@/lib/config"
 import "./globals.css"
 
 const assistant = Assistant({ 
@@ -14,12 +15,11 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: "NAALA - Fashion & Lifestyle",
-  description:
-    "Discover elegant fashion and lifestyle collections from NAALA. New collection 2025 featuring traditional and contemporary designs.",
+  title: siteConfig.seo.defaultTitle,
+  description: siteConfig.description,
   icons: {
-    icon: "/favicon.svg",
-    apple: "/favicon.svg",
+    icon: siteConfig.favicon,
+    apple: siteConfig.favicon,
   },
 }
 

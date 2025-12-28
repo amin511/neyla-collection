@@ -7,9 +7,9 @@ export async function GET(request: Request) {
     const order = searchParams.get("order") || "desc"
     const category = searchParams.get("category") || ""
 
-    const storeUrl = "https://khaki-armadillo-621767.hostingersite.com"
-    const consumerKey = "ck_2257526fafa995a7d5d7fe02c46dbe1a42de245e"
-    const consumerSecret = "cs_af4a042c6bfb24c5c162360e1edecb3a3730d3c9"
+    const storeUrl = process.env.WOOCOMMERCE_STORE_URL!
+    const consumerKey = process.env.WOOCOMMERCE_CONSUMER_KEY!
+    const consumerSecret = process.env.WOOCOMMERCE_CONSUMER_SECRET!
 
     console.log("[v0] Using WooCommerce store:", storeUrl)
 

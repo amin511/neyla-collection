@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Ruler } from "lucide-react"
+import { Ruler, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 
@@ -63,7 +63,11 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
   const [selectedSize, setSelectedSize] = useState<string>("")
   const [showSizeGuide, setShowSizeGuide] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [showLightbox, setShowLightbox] = useState(false)
   const router = useRouter()
+
+  // Maximum thumbnails to show before "+X more"
+  const MAX_VISIBLE_THUMBNAILS = 5
 
   // Get size attribute
   const sizeAttribute = product.attributes?.find(
@@ -74,6 +78,26 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
   // Get all images
   const productImages = product.images?.length > 0 ? product.images : [{ id: 0, src: "/placeholder.svg?height=600&width=600", alt: product.name }]
   const mainImage = productImages[selectedImageIndex]?.src || "/placeholder.svg?height=600&width=600"
+
+  // Calculate visible thumbnails and remaining count
+  const visibleThumbnails = productImages.slice(0, MAX_VISIBLE_THUMBNAILS)
+  const remainingCount = productImages.length - MAX_VISIBLE_THUMBNAILS
+
+  // Navigation functions for lightbox
+  const goToPrevious = () => {
+    setSelectedImageIndex((prev) => (prev === 0 ? productImages.length - 1 : prev - 1))
+  }
+
+  const goToNext = () => {
+    setSelectedImageIndex((prev) => (prev === productImages.length - 1 ? 0 : prev + 1))
+  }
+
+  // Handle keyboard navigation in lightbox
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowLeft") goToPrevious()
+    if (e.key === "ArrowRight") goToNext()
+    if (e.key === "Escape") setShowLightbox(false)
+  }
 
   // Function to handle add to cart and navigate to checkout
   const handleAddToCart = () => {
@@ -105,7 +129,7 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
         {categories.length > 0 && (
           <aside className="hidden lg:block w-56 flex-shrink-0">
             <div className="sticky top-24">
-              <h3 
+              <h3
                 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4 opacity-0 animate-fade-in-rise"
                 style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}
               >
@@ -134,20 +158,23 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
         <div className="flex-1 min-w-0">
           <div className="grid md:grid-cols-2 gap-8">
             {/* Product Images */}
-            <div 
+            <div
               className="space-y-4 opacity-0 animate-fade-in-rise"
               style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}
             >
               {/* Main Image */}
-              <div className="relative bg-secondary rounded-sm overflow-hidden">
-                <Image 
-                  src={mainImage || "/placeholder.svg"} 
-                  alt={product.name} 
+              <div
+                className="relative bg-secondary rounded-sm overflow-hidden cursor-zoom-in"
+                onClick={() => setShowLightbox(true)}
+              >
+                <Image
+                  src={mainImage || "/placeholder.svg"}
+                  alt={product.name}
                   width={0}
                   height={0}
                   sizes="100vw"
                   className="w-full h-auto"
-                  priority 
+                  priority
                 />
                 {/* Naala Brand logo */}
                 <div className="absolute top-4 left-4">
@@ -159,18 +186,24 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                     className="opacity-80"
                   />
                 </div>
+                {/* Image counter badge */}
+                {productImages.length > 1 && (
+                  <div className="absolute bottom-4 right-4 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                    {selectedImageIndex + 1} / {productImages.length}
+                  </div>
+                )}
               </div>
 
-              {/* Thumbnail Gallery */}
+              {/* Thumbnail Gallery - Grid Layout */}
               {productImages.length > 1 && (
-                <div className="flex gap-3 overflow-x-auto pb-2">
-                  {productImages.map((image, index) => (
+                <div className="grid grid-cols-5 gap-2">
+                  {visibleThumbnails.map((image, index) => (
                     <button
                       key={image.id}
                       onClick={() => setSelectedImageIndex(index)}
-                      className={`relative flex-shrink-0 w-20 h-24 rounded-sm overflow-hidden transition-all ${selectedImageIndex === index
-                          ? "ring-2 ring-foreground ring-offset-2"
-                          : "opacity-70 hover:opacity-100"
+                      className={`relative aspect-[3/4] rounded-sm overflow-hidden transition-all ${selectedImageIndex === index
+                        ? "ring-2 ring-foreground ring-offset-2"
+                        : "opacity-70 hover:opacity-100"
                         }`}
                     >
                       <Image
@@ -181,14 +214,23 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                       />
                     </button>
                   ))}
+                  {/* Show "+X more" button if there are more images */}
+                  {remainingCount > 0 && (
+                    <button
+                      onClick={() => setShowLightbox(true)}
+                      className="relative aspect-[3/4] rounded-sm overflow-hidden bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+                    >
+                      <span className="text-sm font-medium text-muted-foreground">
+                        +{remainingCount}
+                      </span>
+                    </button>
+                  )}
                 </div>
               )}
-            </div>
-
-            {/* Product Details */}
+            </div>            {/* Product Details */}
             <div className="flex flex-col gap-6 font-sans">
               {/* Product Name */}
-              <h1 
+              <h1
                 className="text-3xl md:text-4xl font-light text-balance opacity-0 animate-fade-in-rise"
                 style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}
               >
@@ -196,7 +238,7 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
               </h1>
 
               {/* Price */}
-              <div 
+              <div
                 className="flex items-baseline gap-3 opacity-0 animate-fade-in-rise"
                 style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}
               >
@@ -210,7 +252,7 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
 
               {/* Size Selection */}
               {sizes.length > 0 && (
-                <div 
+                <div
                   className="space-y-3 opacity-0 animate-fade-in-rise"
                   style={{ animationDelay: '400ms', animationFillMode: 'forwards' }}
                 >
@@ -221,8 +263,8 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                         key={size}
                         onClick={() => setSelectedSize(size)}
                         className={`px-6 py-2 border rounded-full text-sm transition-colors ${selectedSize === size
-                            ? "bg-foreground text-background border-foreground"
-                            : "border-border hover:border-foreground"
+                          ? "bg-foreground text-background border-foreground"
+                          : "border-border hover:border-foreground"
                           }`}
                       >
                         {size}
@@ -242,7 +284,7 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
               </button>
 
               {/* Add to Cart Button */}
-              <div 
+              <div
                 className="opacity-0 animate-fade-in-rise"
                 style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}
               >
@@ -279,7 +321,7 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
       {/* Product Recommendations */}
       {relatedProducts.length > 0 && (
         <div className="mt-16 pt-12 border-t border-border">
-          <h2 
+          <h2
             className="text-2xl font-light mb-8 text-center opacity-0 animate-fade-in-rise"
             style={{ animationDelay: '600ms', animationFillMode: 'forwards' }}
           >
@@ -308,6 +350,84 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                   {formatPrice(Number.parseFloat(relatedProduct.price))}
                 </p>
               </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox Modal */}
+      {showLightbox && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+          onClick={() => setShowLightbox(false)}
+          onKeyDown={handleKeyDown}
+          tabIndex={0}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setShowLightbox(false)}
+            className="absolute top-4 right-4 z-10 p-2 text-white/80 hover:text-white transition-colors"
+            aria-label="Fermer"
+          >
+            <X className="w-8 h-8" />
+          </button>
+
+          {/* Image counter */}
+          <div className="absolute top-4 left-4 text-white/80 text-sm">
+            {selectedImageIndex + 1} / {productImages.length}
+          </div>
+
+          {/* Previous button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
+            className="absolute left-4 z-10 p-2 text-white/80 hover:text-white transition-colors bg-black/30 rounded-full"
+            aria-label="Image précédente"
+          >
+            <ChevronLeft className="w-8 h-8" />
+          </button>
+
+          {/* Main lightbox image */}
+          <div
+            className="relative max-w-[90vw] max-h-[85vh] flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={productImages[selectedImageIndex]?.src || "/placeholder.svg"}
+              alt={productImages[selectedImageIndex]?.alt || product.name}
+              width={1200}
+              height={1600}
+              className="max-w-full max-h-[85vh] object-contain"
+              priority
+            />
+          </div>
+
+          {/* Next button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); goToNext(); }}
+            className="absolute right-4 z-10 p-2 text-white/80 hover:text-white transition-colors bg-black/30 rounded-full"
+            aria-label="Image suivante"
+          >
+            <ChevronRight className="w-8 h-8" />
+          </button>
+
+          {/* Thumbnail strip at bottom */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 max-w-[90vw] overflow-x-auto px-4 py-2">
+            {productImages.map((image, index) => (
+              <button
+                key={image.id}
+                onClick={(e) => { e.stopPropagation(); setSelectedImageIndex(index); }}
+                className={`relative flex-shrink-0 w-16 h-20 rounded-sm overflow-hidden transition-all ${selectedImageIndex === index
+                    ? "ring-2 ring-white"
+                    : "opacity-50 hover:opacity-100"
+                  }`}
+              >
+                <Image
+                  src={image.src}
+                  alt={image.alt || `${product.name} - Image ${index + 1}`}
+                  fill
+                  className="object-cover"
+                />
+              </button>
             ))}
           </div>
         </div>
