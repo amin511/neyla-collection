@@ -15,7 +15,7 @@ Click **Add New** for each variable and enter the following:
 
 #### Variable 1: WOOCOMMERCE_STORE_URL
 - **Name:** WOOCOMMERCE_STORE_URL
-- **Value:** https://naalas-brand.com
+- **Value:** https://khaki-armadillo-621767.hostingersite.com
 - **Environment:** Production, Preview, Development (select all)
 
 #### Variable 2: WOOCOMMERCE_CONSUMER_KEY

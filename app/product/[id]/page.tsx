@@ -3,7 +3,7 @@ import Header from "@/components/header"
 import Footer from "@/components/footer"
 import ProductDetailClient from "@/components/product-detail-client"
 
-const storeUrl = "https://naalas-brand.com"
+const storeUrl = "https://khaki-armadillo-621767.hostingersite.com"
 const consumerKey = "ck_2257526fafa995a7d5d7fe02c46dbe1a42de245e"
 const consumerSecret = "cs_af4a042c6bfb24c5c162360e1edecb3a3730d3c9"
 

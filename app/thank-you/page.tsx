@@ -24,12 +24,7 @@ function ThankYouContent() {
           Votre commande a été reçue avec succès et sera traitée dans les plus brefs délais.
         </p>
 
-        {orderNumber && (
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <p className="text-sm text-gray-500 mb-1">Numéro de commande</p>
-            <p className="text-xl font-semibold text-gray-900">#{orderNumber}</p>
-          </div>
-        )}
+       
 
         <div className="space-y-3 mb-8 text-sm text-gray-600 text-right">
           <p>✓ Vous recevrez bientôt un appel de confirmation</p>

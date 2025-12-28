@@ -5,7 +5,7 @@
 You need to add the following environment variables to your Vercel project:
 
 1. **WOOCOMMERCE_STORE_URL** - Your WooCommerce store URL
-   - Example: `https://naalas-brand.com`
+   - Example: `https://khaki-armadillo-621767.hostingersite.com`
 
 2. **WOOCOMMERCE_CONSUMER_KEY** - Your WooCommerce REST API Consumer Key
    - Generated in WooCommerce Admin: Settings → Advanced → REST API

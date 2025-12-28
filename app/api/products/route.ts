@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const order = searchParams.get("order") || "desc"
     const category = searchParams.get("category") || ""
 
-    const storeUrl = "https://naalas-brand.com"
+    const storeUrl = "https://khaki-armadillo-621767.hostingersite.com"
     const consumerKey = "ck_2257526fafa995a7d5d7fe02c46dbe1a42de245e"
     const consumerSecret = "cs_af4a042c6bfb24c5c162360e1edecb3a3730d3c9"
 
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     // Ensure store URL doesn't have trailing slash, then add proper path
     const cleanUrl = storeUrl.replace(/\/$/, "")
     let apiUrl = `${cleanUrl}/wp-json/wc/v3/products?per_page=${per_page}&page=${page}&orderby=${orderby}&order=${order}`
-    
+
     // Add category filter if provided (WooCommerce accepts category slug)
     if (category) {
       // First, we need to get the category ID from the slug
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
           "Content-Type": "application/json",
         },
       })
-      
+
       if (catResponse.ok) {
         const categories = await catResponse.json()
         if (categories.length > 0) {
