@@ -2,19 +2,16 @@ import { notFound } from "next/navigation"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import ProductDetailClient from "@/components/product-detail-client"
-
-const storeUrl = process.env.WOOCOMMERCE_STORE_URL!
-const consumerKey = process.env.WOOCOMMERCE_CONSUMER_KEY!
-const consumerSecret = process.env.WOOCOMMERCE_CONSUMER_SECRET!
+import { getWooCredentials, wooConfig } from "@/lib/config"
 
 async function getProduct(id: string) {
   try {
-    const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64")
+    const { storeUrl, authHeader } = getWooCredentials()
     const apiUrl = `${storeUrl}/wp-json/wc/v3/products/${id}`
 
     const response = await fetch(apiUrl, {
       headers: {
-        Authorization: `Basic ${auth}`,
+        Authorization: authHeader,
       },
       cache: "no-store",
     })
@@ -33,12 +30,12 @@ async function getProduct(id: string) {
 
 async function getRelatedProducts(currentProductId: string) {
   try {
-    const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64")
+    const { storeUrl, authHeader } = getWooCredentials()
     const apiUrl = `${storeUrl}/wp-json/wc/v3/products?per_page=5&exclude=${currentProductId}&status=publish`
 
     const response = await fetch(apiUrl, {
       headers: {
-        Authorization: `Basic ${auth}`,
+        Authorization: authHeader,
       },
       cache: "no-store",
     })
@@ -57,12 +54,12 @@ async function getRelatedProducts(currentProductId: string) {
 
 async function getCategories() {
   try {
-    const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64")
-    const apiUrl = `${storeUrl}/wp-json/wc/v3/products/categories?per_page=100&hide_empty=true`
+    const { storeUrl, authHeader } = getWooCredentials()
+    const apiUrl = `${storeUrl}/wp-json/wc/v3/products/categories?per_page=${wooConfig.categories.perPage}&hide_empty=true`
 
     const response = await fetch(apiUrl, {
       headers: {
-        Authorization: `Basic ${auth}`,
+        Authorization: authHeader,
       },
       cache: "no-store",
     })

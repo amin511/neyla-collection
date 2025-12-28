@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
 import { Menu, Search, ShoppingCart, X, ChevronDown, ChevronRight } from "lucide-react"
+import { siteConfig, navigationConfig } from "@/lib/config"
 
 interface Category {
   id: number
@@ -73,7 +74,11 @@ export default function Header() {
 
   return (
     <header className="border-b border-border bg-background sticky top-0 z-40">
-      <div className="bg-secondary text-secondary-foreground text-center py-2 text-sm">Livraison partout en Algérie 📦</div>
+      {navigationConfig.announcement.enabled && (
+        <div className="bg-secondary text-secondary-foreground text-center py-2 text-sm">
+          {navigationConfig.announcement.text}
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         <button
@@ -87,10 +92,10 @@ export default function Header() {
         {/* Logo (centered) */}
         <Link href="/" className="absolute left-1/2 -translate-x-1/2">
           <Image
-            src="/images/nalalogo.png"
-            alt="NAALA"
-            width={120}
-            height={50}
+            src={siteConfig.logo.src}
+            alt={siteConfig.logo.alt}
+            width={siteConfig.logo.width}
+            height={siteConfig.logo.height}
             className="h-12 w-auto object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
             priority
           />

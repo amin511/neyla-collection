@@ -1,18 +1,15 @@
+import { getWooCredentials, wooConfig, navigationConfig } from "@/lib/config"
+
 export async function GET() {
   try {
-    const storeUrl = process.env.WOOCOMMERCE_STORE_URL!
-    const consumerKey = process.env.WOOCOMMERCE_CONSUMER_KEY!
-    const consumerSecret = process.env.WOOCOMMERCE_CONSUMER_SECRET!
+    const { storeUrl, authHeader } = getWooCredentials()
 
-    const credentials = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64")
-
-    const cleanUrl = storeUrl.replace(/\/$/, "")
     // Fetch all categories (including empty ones) to ensure new categories show up
-    const apiUrl = `${cleanUrl}/wp-json/wc/v3/products/categories?per_page=100`
+    const apiUrl = `${storeUrl}/wp-json/wc/v3/products/categories?per_page=${wooConfig.categories.perPage}`
 
     const response = await fetch(apiUrl, {
       headers: {
-        Authorization: `Basic ${credentials}`,
+        Authorization: authHeader,
         "Content-Type": "application/json",
       },
     })
@@ -25,21 +22,15 @@ export async function GET() {
 
     const categories = await response.json()
 
-    // Define the desired order for parent categories
-    // Order: COLLECTION, CAFTANS, ENSEMBLES-ABAYAS, ACCESSOIRES (at the end)
-    const categoryOrder = [
-      "collection",
-      "caftans",
-      "ensembles-abayas",
-      "accessoires"
-    ]
+    // Use category order and excluded categories from navigation config
+    const categoryOrder = navigationConfig.categoryOrder
+    const excludedCategories = navigationConfig.excludedCategories
 
-    // Transform categories data and filter out "Uncategorized"
+    // Transform categories data and filter out excluded categories
     const transformedCategories = (categories || [])
       .filter((category: any) =>
-        category.slug !== "uncategorized" &&
-        category.slug !== "non-classe" &&
-        category.name.toLowerCase() !== "uncategorized"
+        !excludedCategories.includes(category.slug) &&
+        !excludedCategories.includes(category.name.toLowerCase())
       )
       .map((category: any) => ({
         id: category.id,

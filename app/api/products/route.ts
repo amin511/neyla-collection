@@ -1,31 +1,27 @@
+import { getWooCredentials, wooConfig } from "@/lib/config"
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const per_page = searchParams.get("per_page") || "8"
+    const per_page = searchParams.get("per_page") || String(wooConfig.products.perPage)
     const page = searchParams.get("page") || "1"
-    const orderby = searchParams.get("orderby") || "modified"
-    const order = searchParams.get("order") || "desc"
+    const orderby = searchParams.get("orderby") || wooConfig.products.defaultOrderBy
+    const order = searchParams.get("order") || wooConfig.products.defaultOrder
     const category = searchParams.get("category") || ""
 
-    const storeUrl = process.env.WOOCOMMERCE_STORE_URL!
-    const consumerKey = process.env.WOOCOMMERCE_CONSUMER_KEY!
-    const consumerSecret = process.env.WOOCOMMERCE_CONSUMER_SECRET!
+    const { storeUrl, authHeader } = getWooCredentials()
 
     console.log("[v0] Using WooCommerce store:", storeUrl)
 
-    const credentials = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64")
-
-    // Ensure store URL doesn't have trailing slash, then add proper path
-    const cleanUrl = storeUrl.replace(/\/$/, "")
-    let apiUrl = `${cleanUrl}/wp-json/wc/v3/products?per_page=${per_page}&page=${page}&orderby=${orderby}&order=${order}`
+    let apiUrl = `${storeUrl}/wp-json/wc/v3/products?per_page=${per_page}&page=${page}&orderby=${orderby}&order=${order}`
 
     // Add category filter if provided (WooCommerce accepts category slug)
     if (category) {
       // First, we need to get the category ID from the slug
-      const categoriesUrl = `${cleanUrl}/wp-json/wc/v3/products/categories?slug=${category}`
+      const categoriesUrl = `${storeUrl}/wp-json/wc/v3/products/categories?slug=${category}`
       const catResponse = await fetch(categoriesUrl, {
         headers: {
-          Authorization: `Basic ${credentials}`,
+          Authorization: authHeader,
           "Content-Type": "application/json",
         },
       })
@@ -44,7 +40,7 @@ export async function GET(request: Request) {
 
     const response = await fetch(apiUrl, {
       headers: {
-        Authorization: `Basic ${credentials}`,
+        Authorization: authHeader,
         "Content-Type": "application/json",
       },
     })

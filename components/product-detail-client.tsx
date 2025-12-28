@@ -1,20 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, TouchEvent } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Ruler, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-
-// Format price with comma as thousands separator and 2 decimal places
-function formatPrice(price: number): string {
-  const formatted = price.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-  return `DA ${formatted} DZD`
-}
+import { formatPrice, siteConfig } from "@/lib/config"
 
 interface ProductImage {
   id: number
@@ -66,6 +58,35 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
   const [showLightbox, setShowLightbox] = useState(false)
   const router = useRouter()
 
+  // Touch/swipe handling
+  const touchStartX = useRef<number>(0)
+  const touchEndX = useRef<number>(0)
+  const minSwipeDistance = 50 // Minimum distance for a swipe
+
+  const handleTouchStart = (e: TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+    touchEndX.current = e.touches[0].clientX
+  }
+
+  const handleTouchMove = (e: TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX
+  }
+
+  const handleTouchEnd = () => {
+    const distance = touchStartX.current - touchEndX.current
+    const isSwipe = Math.abs(distance) > minSwipeDistance
+
+    if (isSwipe) {
+      if (distance > 0) {
+        // Swipe left -> next image
+        goToNext()
+      } else {
+        // Swipe right -> previous image
+        goToPrevious()
+      }
+    }
+  }
+
   // Maximum thumbnails to show before "+X more"
   const MAX_VISIBLE_THUMBNAILS = 5
 
@@ -83,13 +104,18 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
   const visibleThumbnails = productImages.slice(0, MAX_VISIBLE_THUMBNAILS)
   const remainingCount = productImages.length - MAX_VISIBLE_THUMBNAILS
 
-  // Navigation functions for lightbox
+  // Navigation functions - simple and direct
   const goToPrevious = () => {
     setSelectedImageIndex((prev) => (prev === 0 ? productImages.length - 1 : prev - 1))
   }
 
   const goToNext = () => {
     setSelectedImageIndex((prev) => (prev === productImages.length - 1 ? 0 : prev + 1))
+  }
+
+  // Direct thumbnail click
+  const goToImage = (index: number) => {
+    setSelectedImageIndex(index)
   }
 
   // Handle keyboard navigation in lightbox
@@ -162,25 +188,63 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
               className="space-y-4 opacity-0 animate-fade-in-rise"
               style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}
             >
-              {/* Main Image */}
+              {/* Main Image Slider with swipe support */}
               <div
-                className="relative bg-secondary rounded-sm overflow-hidden cursor-zoom-in"
-                onClick={() => setShowLightbox(true)}
+                className="relative bg-secondary rounded-sm overflow-hidden"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
               >
-                <Image
-                  src={mainImage || "/placeholder.svg"}
-                  alt={product.name}
-                  width={0}
-                  height={0}
-                  sizes="100vw"
-                  className="w-full h-auto"
-                  priority
-                />
-                {/* Naala Brand logo */}
+                {/* Slider container */}
+                <div
+                  className="flex transition-transform duration-300 ease-out"
+                  style={{ transform: `translateX(-${selectedImageIndex * 100}%)` }}
+                >
+                  {productImages.map((image, index) => (
+                    <div
+                      key={image.id}
+                      className="w-full shrink-0 cursor-zoom-in"
+                      onClick={() => setShowLightbox(true)}
+                    >
+                      <Image
+                        src={image.src || "/placeholder.svg"}
+                        alt={image.alt || product.name}
+                        width={0}
+                        height={0}
+                        sizes="100vw"
+                        className="w-full h-auto select-none pointer-events-none"
+                        priority={index === 0}
+                        draggable={false}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Navigation arrows - always visible */}
+                {productImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 p-3 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all hover:scale-105"
+                      aria-label="Image précédente"
+                    >
+                      <ChevronLeft className="w-6 h-6 text-gray-800" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); goToNext(); }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all hover:scale-105"
+                      aria-label="Image suivante"
+                    >
+                      <ChevronRight className="w-6 h-6 text-gray-800" />
+                    </button>
+                  </>
+                )}
+
+                {/* Brand logo */}
                 <div className="absolute top-4 left-4">
                   <Image
-                    src="/images/nalalogo.png"
-                    alt="Naala Brand"
+                    src={siteConfig.logo.src}
+                    alt={siteConfig.logo.alt}
                     width={60}
                     height={60}
                     className="opacity-80"
@@ -200,10 +264,10 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                   {visibleThumbnails.map((image, index) => (
                     <button
                       key={image.id}
-                      onClick={() => setSelectedImageIndex(index)}
-                      className={`relative aspect-[3/4] rounded-sm overflow-hidden transition-all ${selectedImageIndex === index
-                        ? "ring-2 ring-foreground ring-offset-2"
-                        : "opacity-70 hover:opacity-100"
+                      onClick={() => goToImage(index)}
+                      className={`relative aspect-[3/4] rounded-sm overflow-hidden transition-all duration-200 ${selectedImageIndex === index
+                        ? "ring-2 ring-foreground ring-offset-2 opacity-100"
+                        : "opacity-60 hover:opacity-100"
                         }`}
                     >
                       <Image
@@ -361,6 +425,9 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
           className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
           onClick={() => setShowLightbox(false)}
           onKeyDown={handleKeyDown}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           tabIndex={0}
         >
           {/* Close button */}
@@ -380,31 +447,41 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
           {/* Previous button */}
           <button
             onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
-            className="absolute left-4 z-10 p-2 text-white/80 hover:text-white transition-colors bg-black/30 rounded-full"
+            className="absolute left-4 z-10 p-3 text-white hover:text-white transition-colors bg-white/20 hover:bg-white/30 rounded-full"
             aria-label="Image précédente"
           >
             <ChevronLeft className="w-8 h-8" />
           </button>
 
-          {/* Main lightbox image */}
+          {/* Main lightbox image slider */}
           <div
-            className="relative max-w-[90vw] max-h-[85vh] flex items-center justify-center"
+            className="relative w-full max-w-[90vw] max-h-[85vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <Image
-              src={productImages[selectedImageIndex]?.src || "/placeholder.svg"}
-              alt={productImages[selectedImageIndex]?.alt || product.name}
-              width={1200}
-              height={1600}
-              className="max-w-full max-h-[85vh] object-contain"
-              priority
-            />
+            <div
+              className="flex transition-transform duration-300 ease-out items-center"
+              style={{ transform: `translateX(-${selectedImageIndex * 100}%)` }}
+            >
+              {productImages.map((image, index) => (
+                <div key={image.id} className="w-full shrink-0 flex items-center justify-center">
+                  <Image
+                    src={image.src || "/placeholder.svg"}
+                    alt={image.alt || product.name}
+                    width={1200}
+                    height={1600}
+                    className="max-w-full max-h-[85vh] object-contain select-none pointer-events-none"
+                    priority={index === selectedImageIndex}
+                    draggable={false}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Next button */}
           <button
             onClick={(e) => { e.stopPropagation(); goToNext(); }}
-            className="absolute right-4 z-10 p-2 text-white/80 hover:text-white transition-colors bg-black/30 rounded-full"
+            className="absolute right-4 z-10 p-3 text-white hover:text-white transition-colors bg-white/20 hover:bg-white/30 rounded-full"
             aria-label="Image suivante"
           >
             <ChevronRight className="w-8 h-8" />
@@ -415,10 +492,10 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
             {productImages.map((image, index) => (
               <button
                 key={image.id}
-                onClick={(e) => { e.stopPropagation(); setSelectedImageIndex(index); }}
-                className={`relative flex-shrink-0 w-16 h-20 rounded-sm overflow-hidden transition-all ${selectedImageIndex === index
-                    ? "ring-2 ring-white"
-                    : "opacity-50 hover:opacity-100"
+                onClick={(e) => { e.stopPropagation(); goToImage(index); }}
+                className={`relative shrink-0 w-16 h-20 rounded-sm overflow-hidden transition-all duration-200 ${selectedImageIndex === index
+                  ? "ring-2 ring-white opacity-100"
+                  : "opacity-50 hover:opacity-100"
                   }`}
               >
                 <Image

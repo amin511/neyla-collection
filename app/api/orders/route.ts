@@ -1,21 +1,20 @@
+import { getWooCredentials, wooConfig } from "@/lib/config"
+
 export async function POST(request: Request) {
   try {
     const orderData = await request.json()
 
-    const storeUrl = process.env.WOOCOMMERCE_STORE_URL!
-    const consumerKey = process.env.WOOCOMMERCE_CONSUMER_KEY!
-    const consumerSecret = process.env.WOOCOMMERCE_CONSUMER_SECRET!
+    const { storeUrl, authHeader } = getWooCredentials()
 
     console.log("[v0] Creating order in WooCommerce:", orderData)
 
-    const credentials = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64")
-    const cleanUrl = storeUrl.replace(/\/$/, "")
-    const apiUrl = `${cleanUrl}/wp-json/wc/v3/orders`
+    const apiUrl = `${storeUrl}/wp-json/wc/v3/orders`
 
-    // Create WooCommerce order format
+    // Create WooCommerce order format using config
+    const { orders } = wooConfig
     const wooOrder = {
-      payment_method: "cod", // Cash on delivery
-      payment_method_title: "Cash on Delivery",
+      payment_method: orders.paymentMethod,
+      payment_method_title: orders.paymentMethodTitle,
       set_paid: false,
       billing: {
         first_name: orderData.prenom,
@@ -23,14 +22,14 @@ export async function POST(request: Request) {
         address_1: orderData.adresse,
         city: orderData.commune,
         state: orderData.wilaya,
-        country: "DZ",
+        country: orders.defaultCountry,
       },
       shipping: {
         first_name: orderData.prenom,
         address_1: orderData.adresse,
         city: orderData.commune,
         state: orderData.wilaya,
-        country: "DZ",
+        country: orders.defaultCountry,
       },
       line_items: [
         {
@@ -40,8 +39,8 @@ export async function POST(request: Request) {
       ],
       shipping_lines: [
         {
-          method_id: "flat_rate",
-          method_title: "Livraison",
+          method_id: orders.shippingMethod,
+          method_title: orders.shippingTitle,
           total: "0",
         },
       ],
@@ -52,7 +51,7 @@ export async function POST(request: Request) {
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        Authorization: `Basic ${credentials}`,
+        Authorization: authHeader,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(wooOrder),

@@ -18,7 +18,7 @@ export default function HeroSection() {
   }, [slides.length])
 
   return (
-    <section 
+    <section
       className="relative w-full overflow-hidden bg-background"
       style={{ height: `clamp(${heroConfig.height.mobile}, 50vh, ${heroConfig.height.desktop})` }}
     >
@@ -34,9 +34,9 @@ export default function HeroSection() {
       ))}
 
       {/* Dark overlay for better text visibility */}
-      <div 
-        className="absolute inset-0" 
-        style={{ backgroundColor: `rgba(0, 0, 0, ${(slides[currentImage]?.overlay || 30) / 100})` }} 
+      <div
+        className="absolute inset-0"
+        style={{ backgroundColor: `rgba(0, 0, 0, ${(slides[currentImage]?.overlay || 30) / 100})` }}
       />
 
       {/* Content overlay */}

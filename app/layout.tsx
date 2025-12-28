@@ -5,7 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { siteConfig } from "@/lib/config"
 import "./globals.css"
 
-const assistant = Assistant({ 
+const assistant = Assistant({
   subsets: ["latin"],
 })
 
