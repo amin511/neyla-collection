@@ -20,7 +20,7 @@ export default function ProductsSection() {
     const fetchProducts = async () => {
       try {
         setLoading(true)
-        const response = await fetch("/api/products?per_page=20&page=1&orderby=modified&order=desc")
+        const response = await fetch("/api/products?per_page=20&categoty=caftans&page=1&orderby=modified&order=desc")
         const data = await response.json()
 
         if (!response.ok) {
@@ -46,7 +46,7 @@ export default function ProductsSection() {
 
   if (loading) {
     return (
-      <section id="products" className="max-w-7xl mx-auto border-t border-border text-3xl py-16 px-0 scroll-mt-20">
+      <section id="products" className="max-w-7xl mx-auto border-t border-border text-3xl py-16 px-4 scroll-mt-20">
         <h2 className="font-light mb-8 text-foreground mt-0 text-xl">Meilleurs ventes 2026</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {[...Array(20)].map((_, i) => (
@@ -90,7 +90,7 @@ export default function ProductsSection() {
   }
 
   return (
-    <section id="products" className="max-w-7xl mx-auto border-t border-border text-3xl py-0 px-px scroll-mt-20">
+    <section id="products" className="max-w-7xl mx-auto border-t border-border text-3xl py-8 px-4 scroll-mt-20">
       <h2
         className="font-light mb-8 text-foreground mt-0 text-xl opacity-0 animate-fade-in-rise "
         style={{ animationDelay: '50ms', animationFillMode: 'forwards' }}

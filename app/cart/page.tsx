@@ -44,7 +44,7 @@ export default function CartPage() {
 
   const updateQuantity = (newQuantity: number) => {
     if (!cartItem || newQuantity < 1) return
-    
+
     const updatedItem = { ...cartItem, quantity: newQuantity }
     setCartItem(updatedItem)
     localStorage.setItem("cartItem", JSON.stringify(updatedItem))
@@ -79,7 +79,7 @@ export default function CartPage() {
   return (
     <main className="min-h-screen bg-background">
       <Header />
-      
+
       <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
         {/* Page Title */}
         <div className="flex items-center gap-3 mb-8 md:mb-12">
@@ -97,7 +97,7 @@ export default function CartPage() {
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">
               Découvrez notre collection et trouvez les pièces parfaites pour votre garde-robe.
             </p>
-            <Link 
+            <Link
               href="/"
               className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3 text-sm font-medium hover:bg-primary/90 transition-all duration-300"
             >
@@ -177,7 +177,7 @@ export default function CartPage() {
               </div>
 
               {/* Continue Shopping Link */}
-              <Link 
+              <Link
                 href="/"
                 className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mt-6 transition-colors"
               >
@@ -190,7 +190,7 @@ export default function CartPage() {
             <div className="lg:col-span-1">
               <div className="border border-border rounded-sm bg-card p-6 sticky top-24">
                 <h2 className="text-lg font-medium mb-6">Récapitulatif</h2>
-                
+
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Sous-total</span>
@@ -226,7 +226,7 @@ export default function CartPage() {
                       <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
                         <span className="text-green-600 text-[10px]">✓</span>
                       </div>
-                      <span>Livraison gratuite - 62 wilayas</span>
+                      <span>Livraison disponible</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">

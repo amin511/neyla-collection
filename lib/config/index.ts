@@ -6,11 +6,24 @@
  * import { siteConfig, themeConfig, wooConfig } from "@/lib/config"
  */
 
-export { siteConfig, type SiteConfig } from "./site"
+export { siteConfig, type SiteConfig, type CheckoutMode } from "./site"
 export { themeConfig, type ThemeConfig } from "./theme"
 export { navigationConfig, type NavigationConfig, type NavItem } from "./navigation"
 export { wooConfig, getWooCredentials, buildApiUrl, type WooConfig } from "./woocommerce"
 export { heroConfig, type HeroConfig, type HeroSlide } from "./hero"
+export {
+    shippingRates,
+    shippingConfig,
+    deliveryMethods,
+    defaultShippingRate,
+    getShippingPrice,
+    getShippingRates,
+    hasCustomRates,
+    isFreeShipping,
+    type DeliveryMethod,
+    type ShippingRate,
+    type DeliveryMethodInfo,
+} from "./shipping"
 
 /**
  * Price formatting utility using site config

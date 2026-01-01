@@ -82,6 +82,28 @@ export const siteConfig = {
         multiLanguage: false,
     },
 
+    /**
+     * Checkout Mode Configuration
+     * Defines how users can purchase products
+     * 
+     * Options:
+     * - "form"  : Only inline form on product page (direct order)
+     * - "cart"  : Only add to cart button (redirect to cart/checkout)
+     * - "both"  : Both options available (form + add to cart button)
+     */
+    checkoutMode: "cart" as "form" | "cart" | "both",
+
+    /**
+     * Add to Cart Redirect Configuration
+     * Defines where the user is redirected after adding to cart
+     * 
+     * Options:
+     * - "cart"     : Redirect to the cart page (/cart)
+     * - "checkout" : Redirect directly to checkout page (/checkout)
+     * - "stay"     : Stay on the current page (no redirect)
+     */
+    addToCartRedirect: "checkout" as "cart" | "checkout" | "stay",
+
     // Copyright
     copyright: {
         year: new Date().getFullYear(),
@@ -90,3 +112,5 @@ export const siteConfig = {
 } as const
 
 export type SiteConfig = typeof siteConfig
+export type CheckoutMode = "form" | "cart" | "both"
+export type AddToCartRedirect = "cart" | "checkout" | "stay"

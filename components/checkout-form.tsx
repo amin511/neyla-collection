@@ -2,10 +2,17 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
-import { User, Phone, MapPin, Minus, Plus, ArrowLeft } from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
+import { User, Phone, MapPin, Minus, Plus, ArrowLeft, Truck, Loader2 } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import {
+  formatPrice,
+  shippingConfig,
+  isFreeShipping,
+  type DeliveryMethod,
+} from "@/lib/config"
+import { useWilayaShipping, type WilayaShippingMethod } from "@/lib/hooks/useShipping"
 
 const WILAYAS = [
   "Adrar",
@@ -130,6 +137,7 @@ export default function CheckoutForm() {
   const [quantity, setQuantity] = useState(1)
   const [wilaya, setWilaya] = useState("")
   const [commune, setCommune] = useState("")
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>(shippingConfig.defaultMethod)
   const [formData, setFormData] = useState({
     prenom: "",
     telephone: "",
@@ -139,6 +147,9 @@ export default function CheckoutForm() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Récupérer les données de livraison depuis WooCommerce API
+  const { shippingData, loading: shippingLoading } = useWilayaShipping(wilaya || null)
+
   useEffect(() => {
     const cartItem = localStorage.getItem("cartItem")
     if (cartItem) {
@@ -146,6 +157,37 @@ export default function CheckoutForm() {
       setProduct(parsedItem)
     }
   }, [])
+
+  // Vérifier si le shipping est activé dans la configuration
+  const isShippingEnabled = shippingConfig.enabled
+
+  // Méthodes de livraison dynamiques depuis WooCommerce
+  const dynamicDeliveryMethods = useMemo((): WilayaShippingMethod[] => {
+    if (!shippingData) return []
+    return shippingData.methods.filter(m => m.deliveryType !== "other")
+  }, [shippingData])
+
+  // Calcul du sous-total et livraison
+  const sousTotal = product ? Number.parseFloat(product.price) * quantity : 0
+
+  // Calcul dynamique des frais de livraison depuis WooCommerce
+  const livraison = useMemo(() => {
+    // Si shipping désactivé, retourner 0
+    if (!isShippingEnabled) return 0
+    if (!wilaya || !shippingData) return 0
+    // Vérifier si la livraison est gratuite
+    if (isFreeShipping(sousTotal)) return 0
+
+    // Utiliser les prix dynamiques de WooCommerce
+    if (deliveryMethod === "domicile") {
+      return shippingData.domicilePrice
+    } else if (deliveryMethod === "stopdesk") {
+      return shippingData.stopdeskPrice
+    }
+    return shippingData.cheapestMethod?.cost || 0
+  }, [wilaya, deliveryMethod, sousTotal, isShippingEnabled, shippingData])
+
+  const total = sousTotal + livraison
 
   if (!product) {
     return (
@@ -157,10 +199,6 @@ export default function CheckoutForm() {
       </div>
     )
   }
-
-  const sousTotal = Number.parseFloat(product.price) * quantity
-  const livraison = 0
-  const total = sousTotal + livraison
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -181,6 +219,9 @@ export default function CheckoutForm() {
         wilaya,
         commune,
         adresse: formData.adresse,
+        delivery_method: deliveryMethod,
+        shipping_cost: livraison,
+        subtotal: sousTotal,
         total,
       }
 
@@ -364,6 +405,90 @@ export default function CheckoutForm() {
                   />
                 </div>
               </div>
+
+              {/* Delivery Method Selection - Only show if shipping is enabled */}
+              {isShippingEnabled && shippingConfig.allowMethodSelection && (
+                <div className="space-y-3 pt-4 border-t border-gray-200">
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-4 h-4 text-gray-500" />
+                    <label className="text-sm font-medium text-gray-700">
+                      Mode de livraison
+                    </label>
+                    {shippingLoading && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+                  </div>
+
+                  {/* Afficher les méthodes de WooCommerce si disponibles */}
+                  {shippingData && dynamicDeliveryMethods.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {dynamicDeliveryMethods.map((method) => {
+                        const isSelected = deliveryMethod === method.deliveryType
+                        const isFree = method.isFree || (wilaya && isFreeShipping(sousTotal))
+
+                        return (
+                          <button
+                            key={method.id}
+                            type="button"
+                            onClick={() => setDeliveryMethod(method.deliveryType as DeliveryMethod)}
+                            className={`relative p-4 rounded-lg border-2 text-left transition-all duration-200 ${isSelected
+                              ? 'border-[#0B5A8A] bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-400'
+                              }`}
+                          >
+                            {/* Selected indicator */}
+                            {isSelected && (
+                              <div className="absolute top-3 right-3 w-5 h-5 bg-[#0B5A8A] rounded-full flex items-center justify-center">
+                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                            )}
+
+                            <div className="flex items-start gap-3">
+                              <span className="text-xl">{method.deliveryType === 'stopdesk' ? '📦' : '🏠'}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-sm">{method.title}</div>
+                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                                  {/* {method.description || (method.deliveryType === 'stopdesk' ? 'Récupérez votre colis au point relais' : 'Livraison à votre adresse')} */}
+                                </p>
+
+                                {/* Price from WooCommerce */}
+                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                                  <span className="text-xs text-gray-400">
+                                    {/* {method.deliveryType === 'stopdesk' ? '2-4 jours' : '3-5 jours'} */}
+                                  </span>
+                                  <span className={`font-bold text-sm ${isFree ? 'text-green-600' : 'text-[#0B5A8A]'}`}>
+                                    {isFree ? 'Gratuit' : formatPrice(method.cost)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  ) : wilaya && shippingLoading ? (
+                    <div className="text-center py-4">
+                      <Loader2 className="w-6 h-6 animate-spin text-gray-400 mx-auto" />
+                      <p className="text-xs text-gray-400 mt-2">Chargement des tarifs...</p>
+                    </div>
+                  ) : wilaya && !shippingData ? (
+                    <div className="text-center py-4 text-xs text-gray-500">
+                      <p>Tarifs non disponibles pour cette wilaya</p>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-xs text-gray-400">
+                      <p>Sélectionnez une wilaya pour voir les options de livraison</p>
+                    </div>
+                  )}
+
+                  {/* Show shipping info if wilaya is selected */}
+                  {wilaya && shippingData && (
+                    <p className="text-xs text-gray-400 text-center">
+                      Livraison vers {wilaya} ({shippingData.zoneName}) • {deliveryMethod === 'stopdesk' ? 'Point relais' : 'Domicile'}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -390,10 +515,12 @@ export default function CheckoutForm() {
                 <span className="text-gray-600">Sous-total</span>
                 <span className="font-medium">DA {sousTotal.toLocaleString()}.00</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Livraison</span>
-                <span className="font-medium">{livraison === 0 ? "?" : `DA ${livraison.toLocaleString()}.00`}</span>
-              </div>
+              {shippingConfig.enabled && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Livraison</span>
+                  <span className="font-medium">{livraison === 0 ? "?" : `DA ${livraison.toLocaleString()}.00`}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-base pt-3 border-t border-gray-200">
                 <span>Total</span>
                 <span>DA {total.toLocaleString()}.00</span>

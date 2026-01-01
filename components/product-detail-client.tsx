@@ -3,10 +3,11 @@
 import { useState, useRef, TouchEvent } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Ruler, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation"
 import { formatPrice, siteConfig } from "@/lib/config"
+import ProductCheckoutForm from "@/components/product-checkout-form"
 
 interface ProductImage {
   id: number
@@ -56,7 +57,51 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
   const [showSizeGuide, setShowSizeGuide] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [showLightbox, setShowLightbox] = useState(false)
+  const [addedToCart, setAddedToCart] = useState(false)
   const router = useRouter()
+
+  // Get checkout mode from config
+  const checkoutMode = siteConfig.checkoutMode
+  const showForm = checkoutMode === "form" || checkoutMode === "both"
+  const showCart = checkoutMode === "cart" || checkoutMode === "both"
+
+  // Function to handle add to cart
+  const handleAddToCart = () => {
+    if (sizes.length > 0 && !selectedSize) {
+      alert("Veuillez sélectionner une taille")
+      return
+    }
+
+    const cartItem = {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      size: selectedSize,
+      image: mainImage,
+      quantity: 1,
+    }
+
+    localStorage.setItem("cartItem", JSON.stringify(cartItem))
+    window.dispatchEvent(new Event("cartUpdated"))
+
+    if (checkoutMode === "cart") {
+      // If cart only mode, redirect based on addToCartRedirect config
+      const redirectTo = siteConfig.addToCartRedirect
+      if (redirectTo === "checkout") {
+        router.push("/checkout")
+      } else if (redirectTo === "cart") {
+        router.push("/cart")
+      } else {
+        // "stay" - show confirmation without redirect
+        setAddedToCart(true)
+        setTimeout(() => setAddedToCart(false), 3000)
+      }
+    } else {
+      // Show confirmation for "both" mode
+      setAddedToCart(true)
+      setTimeout(() => setAddedToCart(false), 3000)
+    }
+  }
 
   // Touch/swipe handling
   const touchStartX = useRef<number>(0)
@@ -125,29 +170,6 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
     if (e.key === "Escape") setShowLightbox(false)
   }
 
-  // Function to handle add to cart and navigate to checkout
-  const handleAddToCart = () => {
-    if (sizes.length > 0 && !selectedSize) {
-      alert("Veuillez sélectionner une taille")
-      return
-    }
-
-    // Store product in localStorage for checkout
-    const cartItem = {
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      size: selectedSize,
-      image: mainImage,
-      quantity: 1,
-    }
-
-    localStorage.setItem("cartItem", JSON.stringify(cartItem))
-
-    // Navigate to checkout
-    router.push("/checkout")
-  }
-
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex gap-8">
@@ -190,14 +212,14 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
             >
               {/* Main Image Slider with swipe support */}
               <div
-                className="relative bg-secondary rounded-sm overflow-hidden"
+                className="relative rounded-sm overflow-hidden"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
               >
                 {/* Slider container */}
                 <div
-                  className="flex transition-transform duration-300 ease-out"
+                  className="flex transition-all duration-300 ease-out items-start"
                   style={{ transform: `translateX(-${selectedImageIndex * 100}%)` }}
                 >
                   {productImages.map((image, index) => (
@@ -347,20 +369,75 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                 Guides des tailles
               </button>
 
-              {/* Add to Cart Button */}
-              <div
-                className="opacity-0 animate-fade-in-rise"
-                style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}
-              >
-                <Button
-                  size="lg"
-                  className="w-full mt-4 rounded-full py-6 text-base"
-                  disabled={sizes.length > 0 && !selectedSize}
-                  onClick={handleAddToCart}
+              {/* Size validation message */}
+              {sizes.length > 0 && !selectedSize && (
+                <div
+                  className="text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg text-center opacity-0 animate-fade-in-rise"
+                  style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}
                 >
-                  Ajouter au panier
-                </Button>
-              </div>
+                  Veuillez sélectionner une taille pour continuer
+                </div>
+              )}
+
+              {/* Checkout Section - Based on checkoutMode config */}
+              {(sizes.length === 0 || selectedSize) && (
+                <div
+                  className="space-y-4 opacity-0 animate-fade-in-rise"
+                  style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}
+                >
+                  {/* Add to Cart Button - shown for "cart" and "both" modes */}
+                  {showCart && (
+                    <div className="space-y-2">
+                      <Button
+                        size="lg"
+                        variant={checkoutMode === "both" ? "outline" : "default"}
+                        className="w-full rounded-full py-6 text-base"
+                        onClick={handleAddToCart}
+                      >
+                        {addedToCart ? (
+                          <>
+                            <span className="text-green-600">✓</span> Ajouté au panier
+                          </>
+                        ) : (
+                          "Ajouter au panier"
+                        )}
+                      </Button>
+                      {addedToCart && (
+                        <div className="flex justify-center">
+                          <Link
+                            href="/cart"
+                            className="text-sm text-muted-foreground hover:text-foreground underline"
+                          >
+                            Voir le panier →
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Separator for "both" mode */}
+                  {checkoutMode === "both" && (
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1 h-px bg-border" />
+                      <span className="text-xs text-muted-foreground uppercase">ou commander directement</span>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+                  )}
+
+                  {/* Inline Checkout Form - shown for "form" and "both" modes */}
+                  {showForm && (
+                    <ProductCheckoutForm
+                      product={{
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        image: mainImage,
+                        size: selectedSize,
+                      }}
+                    />
+                  )}
+                </div>
+              )}
 
               {/* Product Description */}
               <div className="pt-6 border-t border-border">

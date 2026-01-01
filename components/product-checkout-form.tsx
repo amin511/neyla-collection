@@ -1,0 +1,419 @@
+"use client"
+
+import type React from "react"
+import { useState, useMemo } from "react"
+import { User, Phone, Minus, Plus, ShoppingBag, Truck, Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import {
+  formatPrice,
+  shippingConfig,
+  isFreeShipping,
+  type DeliveryMethod,
+} from "@/lib/config"
+import { useWilayaShipping, type WilayaShippingMethod } from "@/lib/hooks/useShipping"
+
+const WILAYAS = [
+  "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar",
+  "Blida", "Bouira", "Tamanrasset", "Tébessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Alger",
+  "Djelfa", "Jijel", "Sétif", "Saïda", "Skikda", "Sidi Bel Abbès", "Annaba", "Guelma",
+  "Constantine", "Médéa", "Mostaganem", "M'Sila", "Mascara", "Ouargla", "Oran", "El Bayadh",
+  "Illizi", "Bordj Bou Arreridj", "Boumerdès", "El Tarf", "Tindouf", "Tissemsilt", "El Oued",
+  "Khenchela", "Souk Ahras", "Tipaza", "Mila", "Aïn Defla", "Naâma", "Aïn Témouchent",
+  "Ghardaïa", "Relizane",
+]
+
+const COMMUNES: Record<string, string[]> = {
+  Adrar: ["Adrar", "Reggane", "Timimoun", "Aoulef", "Bordj Badji Mokhtar"],
+  Chlef: ["Chlef", "Ténès", "El Karimia", "Oued Fodda", "Boukadir"],
+  Laghouat: ["Laghouat", "Aflou", "Ksar El Hirane", "Hassi R'Mel"],
+  "Oum El Bouaghi": ["Oum El Bouaghi", "Aïn Beïda", "Aïn M'lila", "Meskiana"],
+  Batna: ["Batna", "Barika", "Arris", "Merouana", "N'Gaous"],
+  Béjaïa: ["Béjaïa", "Akbou", "Amizour", "El Kseur", "Sidi Aïch"],
+  Biskra: ["Biskra", "Tolga", "Sidi Okba", "Ouled Djellal", "El Kantara"],
+  Béchar: ["Béchar", "Abadla", "Beni Ounif", "Kenadsa", "Taghit"],
+  Blida: ["Blida", "Boufarik", "Bougara", "Bouinan", "Larbaa"],
+  Bouira: ["Bouira", "Lakhdaria", "Sour El Ghozlane", "Aïn Bessem"],
+  Tamanrasset: ["Tamanrasset", "In Salah", "In Guezzam", "Tazrouk"],
+  Tébessa: ["Tébessa", "Bir El Ater", "Cheria", "El Ouenza", "Hammamet"],
+  Tlemcen: ["Tlemcen", "Maghnia", "Ghazaouet", "Remchi", "Sebdou"],
+  Tiaret: ["Tiaret", "Sougueur", "Frenda", "Ksar Chellala", "Mahdia"],
+  "Tizi Ouzou": ["Tizi Ouzou", "Azazga", "Draa Ben Khedda", "Tigzirt", "Boghni"],
+  Alger: ["Alger Centre", "Bab El Oued", "Kouba", "Hussein Dey", "Dar El Beida", "Baraki", "Rouiba", "Birkhadem", "El Harrach", "Birtouta", "Zeralda", "Draria", "Cheraga", "Bouzareah", "El Biar", "Hydra"],
+  Djelfa: ["Djelfa", "Aïn Oussera", "Messaad", "Hassi Bahbah", "Birine"],
+  Jijel: ["Jijel", "El Milia", "Taher", "Chekfa", "El Aouana"],
+  Sétif: ["Sétif", "El Eulma", "Aïn Arnat", "Aïn Oulmene", "Bougaa"],
+  Saïda: ["Saïda", "Aïn El Hadjar", "Ouled Khaled", "Youb"],
+  Skikda: ["Skikda", "Tamalous", "El Harrouch", "Azzaba", "Collo"],
+  "Sidi Bel Abbès": ["Sidi Bel Abbès", "Telagh", "Ben Badis", "Tessala"],
+  Annaba: ["Annaba", "El Hadjar", "Berrahal", "El Bouni", "Seraïdi"],
+  Guelma: ["Guelma", "Héliopolis", "Hammam Debagh", "Oued Zenati"],
+  Constantine: ["Constantine", "El Khroub", "Aïn Smara", "Zighoud Youcef", "Hamma Bouziane"],
+  Médéa: ["Médéa", "Berrouaghia", "Ksar Boukhari", "El Omaria", "Tablat"],
+  Mostaganem: ["Mostaganem", "Aïn Tedeles", "Sidi Ali", "Hassi Mameche"],
+  "M'Sila": ["M'Sila", "Bou Saada", "Sidi Aïssa", "Aïn El Melh", "Magra"],
+  Mascara: ["Mascara", "Sig", "Ghriss", "Tighennif", "Mohammadia"],
+  Ouargla: ["Ouargla", "Touggourt", "Hassi Messaoud", "Rouissat", "Tebesbest"],
+  Oran: ["Oran", "Bir El Djir", "Es Senia", "Arzew", "Aïn El Turck", "Bethioua", "Sidi Chami"],
+  "El Bayadh": ["El Bayadh", "Brezina", "Bogtob", "El Abiodh Sidi Cheikh"],
+  Illizi: ["Illizi", "Djanet", "Bordj Omar Driss", "Debdeb"],
+  "Bordj Bou Arreridj": ["Bordj Bou Arreridj", "Ras El Oued", "Bordj Ghdir", "Medjana"],
+  Boumerdès: ["Boumerdès", "Dellys", "Boudouaou", "Khemis El Khechna", "Thenia"],
+  "El Tarf": ["El Tarf", "Ben M'Hidi", "Besbes", "El Kala", "Bouhadjar"],
+  Tindouf: ["Tindouf", "Oum El Assel"],
+  Tissemsilt: ["Tissemsilt", "Theniet El Had", "Khemisti", "Bordj Bounaama"],
+  "El Oued": ["El Oued", "Robbah", "Djamaa", "Debila", "Kouinine"],
+  Khenchela: ["Khenchela", "Babar", "Aïn Touila", "Chechar", "El Hamma"],
+  "Souk Ahras": ["Souk Ahras", "Sedrata", "Taoura", "Mdaourouch", "Heddada"],
+  Tipaza: ["Tipaza", "Cherchell", "Hadjout", "Kolea", "Fouka"],
+  Mila: ["Mila", "Chelghoum Laïd", "Ferdjioua", "Tadjenanet", "Sidi Merouane"],
+  "Aïn Defla": ["Aïn Defla", "Khemis Miliana", "El Attaf", "Djendel", "Boumedfaa"],
+  Naâma: ["Naâma", "Mecheria", "Aïn Sefra", "Moghrar"],
+  "Aïn Témouchent": ["Aïn Témouchent", "Hammam Bou Hadjar", "Beni Saf", "El Malah"],
+  Ghardaïa: ["Ghardaïa", "Berriane", "El Menia", "Metlili", "Guerrara"],
+  Relizane: ["Relizane", "Oued Rhiou", "Djidiouia", "Yellel", "Mazouna"],
+}
+
+interface ProductCheckoutFormProps {
+  product: {
+    id: number
+    name: string
+    price: string
+    image: string
+    size?: string
+  }
+}
+
+export default function ProductCheckoutForm({ product }: ProductCheckoutFormProps) {
+  const [quantity, setQuantity] = useState(1)
+  const [wilaya, setWilaya] = useState("")
+  const [commune, setCommune] = useState("")
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>(shippingConfig.defaultMethod)
+  const [formData, setFormData] = useState({
+    prenom: "",
+    telephone: "",
+  })
+  const router = useRouter()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Vérifier si le shipping est activé dans la configuration
+  const isShippingEnabled = shippingConfig.enabled
+
+  // Récupérer les données de livraison depuis WooCommerce API
+  const { shippingData, loading: shippingLoading } = useWilayaShipping(wilaya || null)
+
+  const productPrice = Number.parseFloat(product.price) || 0
+  const sousTotal = productPrice * quantity
+
+  // Méthodes de livraison dynamiques depuis WooCommerce
+  const dynamicDeliveryMethods = useMemo((): WilayaShippingMethod[] => {
+    if (!shippingData) return []
+    return shippingData.methods.filter(m => m.deliveryType !== "other")
+  }, [shippingData])
+
+  // Calcul dynamique des frais de livraison depuis WooCommerce
+  const livraison = useMemo(() => {
+    // Si shipping désactivé, retourner 0
+    if (!isShippingEnabled) return 0
+    if (!wilaya || !shippingData) return 0
+    // Vérifier si la livraison est gratuite
+    if (isFreeShipping(sousTotal)) return 0
+
+    // Utiliser les prix dynamiques de WooCommerce
+    if (deliveryMethod === "domicile") {
+      return shippingData.domicilePrice
+    } else if (deliveryMethod === "stopdesk") {
+      return shippingData.stopdeskPrice
+    }
+    return shippingData.cheapestMethod?.cost || 0
+  }, [wilaya, deliveryMethod, sousTotal, isShippingEnabled, shippingData])
+
+  const total = sousTotal + livraison
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!formData.prenom || !formData.telephone || !wilaya || !commune) {
+      alert("Veuillez remplir tous les champs obligatoires")
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const orderPayload = {
+        product_id: product.id,
+        quantity,
+        prenom: formData.prenom,
+        telephone: formData.telephone,
+        wilaya,
+        commune,
+        delivery_method: deliveryMethod,
+        shipping_cost: livraison,
+        subtotal: sousTotal,
+        total,
+        size: product.size,
+      }
+
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderPayload),
+      })
+
+      if (!response.ok) throw new Error("Failed to create order")
+
+      const result = await response.json()
+      router.push(`/thank-you?order=${result.order_number || result.order_id}`)
+    } catch (error) {
+      console.error("Order submission error:", error)
+      alert("Erreur lors de la création de la commande. Veuillez réessayer.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="border-2 border-black rounded-2xl p-6 bg-white shadow-lg transition-all duration-300 hover:shadow-xl">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Quantity Selector */}
+        <div className="pb-4 border-b border-gray-200">
+          <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3 block">
+            Quantité
+          </label>
+          <div className="inline-flex items-center border-2 border-black rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              className="px-4 py-3 hover:bg-black hover:text-white transition-all duration-200 ease-out"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+            <span className="px-6 py-3 font-bold text-lg min-w-[4rem] text-center bg-gray-50">
+              {quantity}
+            </span>
+            <button
+              type="button"
+              onClick={() => setQuantity(quantity + 1)}
+              className="px-4 py-3 hover:bg-black hover:text-white transition-all duration-200 ease-out"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Delivery Info */}
+        <div className="space-y-4">
+          <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 block">
+            Informations de livraison
+          </label>
+
+          {/* Name */}
+          <div className="relative group">
+            <label className="absolute -top-2.5 left-3 px-2 bg-white text-xs font-medium text-gray-500 group-focus-within:text-black transition-colors duration-200">
+              Nom <span className="text-red-500">*</span>
+            </label>
+            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors duration-200" />
+            <input
+              type="text"
+              placeholder="Entrez votre nom"
+              required
+              value={formData.prenom}
+              onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
+              className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl text-sm font-medium placeholder:text-gray-400 focus:outline-none focus:border-black hover:border-gray-400 transition-all duration-200 ease-out"
+            />
+          </div>
+
+          {/* Phone */}
+          <div className="relative group">
+            <label className="absolute -top-2.5 left-3 px-2 bg-white text-xs font-medium text-gray-500 group-focus-within:text-black transition-colors duration-200">
+              Téléphone <span className="text-red-500">*</span>
+            </label>
+            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors duration-200" />
+            <input
+              type="tel"
+              placeholder="0X XX XX XX XX"
+              required
+              value={formData.telephone}
+              onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
+              className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl text-sm font-medium placeholder:text-gray-400 focus:outline-none focus:border-black hover:border-gray-400 transition-all duration-200 ease-out"
+            />
+          </div>
+
+          {/* Wilaya */}
+          <div className="relative group">
+            <label className="absolute -top-2.5 left-3 px-2 bg-white text-xs font-medium text-gray-500 group-focus-within:text-black transition-colors duration-200 z-10">
+              Wilaya <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={wilaya}
+              required
+              onChange={(e) => { setWilaya(e.target.value); setCommune("") }}
+              className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:border-black hover:border-gray-400 transition-all duration-200 ease-out appearance-none bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23666%22%20stroke-width%3D%222%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[center_right_1rem] cursor-pointer"
+            >
+              <option value="" className="text-gray-400">Sélectionner votre wilaya</option>
+              {WILAYAS.map((w) => <option key={w} value={w}>{w}</option>)}
+            </select>
+          </div>
+
+          {/* Commune */}
+          <div className="relative group">
+            <label className="absolute -top-2.5 left-3 px-2 bg-white text-xs font-medium text-gray-500 group-focus-within:text-black transition-colors duration-200 z-10">
+              Commune <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={commune}
+              required
+              onChange={(e) => setCommune(e.target.value)}
+              disabled={!wilaya}
+              className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:border-black hover:border-gray-400 transition-all duration-200 ease-out appearance-none bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23666%22%20stroke-width%3D%222%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[center_right_1rem] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-gray-50"
+            >
+              <option value="" className="text-gray-400">Sélectionner votre commune</option>
+              {wilaya && COMMUNES[wilaya]?.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Delivery Method Selection - Only show if shipping is enabled */}
+        {isShippingEnabled && shippingConfig.allowMethodSelection && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Truck className="w-4 h-4 text-gray-500" />
+              <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                Mode de livraison
+              </label>
+              {shippingLoading && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+            </div>
+
+            {/* Afficher les méthodes de WooCommerce si disponibles */}
+            {shippingData && dynamicDeliveryMethods.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {dynamicDeliveryMethods.map((method) => {
+                  const isSelected = deliveryMethod === method.deliveryType
+                  const isFree = method.isFree || (wilaya && isFreeShipping(sousTotal))
+
+                  return (
+                    <button
+                      key={method.id}
+                      type="button"
+                      onClick={() => setDeliveryMethod(method.deliveryType as DeliveryMethod)}
+                      className={`relative p-4 rounded-xl border-2 text-left transition-all duration-200 ${isSelected
+                        ? 'border-black bg-gray-50'
+                        : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                    >
+                      {/* Selected indicator */}
+                      {isSelected && (
+                        <div className="absolute top-3 right-3 w-5 h-5 bg-black rounded-full flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+
+                      <div className="flex items-start gap-3">
+                        <span className="text-xl">{method.deliveryType === 'stopdesk' ? '📦' : '🏠'}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-sm">{method.title}</div>
+                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                            {/* {method.description || (method.deliveryType === 'stopdesk' ? 'Récupérez votre colis au point relais' : 'Livraison à votre adresse')} */}
+                          </p>
+
+                          {/* Price from WooCommerce */}
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                            <span className="text-xs text-gray-400">
+                              {/* {method.deliveryType === 'stopdesk' ? '2-4 jours' : '3-5 jours'} */}
+                            </span>
+                            <span className={`font-bold text-sm ${isFree ? 'text-green-600' : 'text-black'}`}>
+                              {isFree ? 'Gratuit' : formatPrice(method.cost)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            ) : wilaya && shippingLoading ? (
+              <div className="text-center py-4">
+                <Loader2 className="w-6 h-6 animate-spin text-gray-400 mx-auto" />
+                <p className="text-xs text-gray-400 mt-2">Chargement des tarifs...</p>
+              </div>
+            ) : wilaya && !shippingData ? (
+              <div className="text-center py-4 text-xs text-gray-500">
+                <p>Tarifs non disponibles pour cette wilaya</p>
+              </div>
+            ) : (
+              <div className="text-center py-4 text-xs text-gray-400">
+                <p>Sélectionnez une wilaya pour voir les options de livraison</p>
+              </div>
+            )}
+
+            {/* Show shipping info if wilaya is selected */}
+            {wilaya && shippingData && (
+              <p className="text-xs text-gray-400 text-center">
+                Livraison vers {wilaya} ({shippingData.zoneName}) • {deliveryMethod === 'stopdesk' ? 'Point relais' : 'Domicile'}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Order Summary */}
+        <div className="bg-gray-50 rounded-xl p-5 space-y-3 border border-gray-100">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">Sous-total ({quantity} article{quantity > 1 ? 's' : ''})</span>
+            <span className="font-medium">{formatPrice(sousTotal)}</span>
+          </div>
+          <div className="flex justify-between text-sm items-center">
+            <span className="text-gray-500">Livraison</span>
+            {isShippingEnabled ? (
+              wilaya ? (
+                isFreeShipping(sousTotal) ? (
+                  <span className="text-green-600 font-medium">Gratuit</span>
+                ) : (
+                  <span className="font-medium">{formatPrice(livraison)}</span>
+                )
+              ) : (
+                <span className="text-gray-400 text-xs">Sélectionner une wilaya</span>
+              )
+            ) : (
+              <span className="text-gray-400 text-xs">{shippingConfig.disabledMessage}</span>
+            )}
+          </div>
+          <div className="text-xs text-gray-400">
+            💵 Paiement à la livraison
+          </div>
+          <div className="flex justify-between font-bold text-lg pt-3 border-t border-gray-200">
+            <span>Total</span>
+            <span>{formatPrice(total)}</span>
+          </div>
+        </div>
+
+        {/* Animated Submit Button */}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="group relative w-full bg-black text-white py-4 rounded-xl font-semibold text-base overflow-hidden transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+        >
+          <span className="relative z-10 flex items-center justify-center gap-3">
+            <ShoppingBag className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-12" />
+            {isSubmitting ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Traitement...
+              </span>
+            ) : (
+              <span>Commander maintenant</span>
+            )}
+          </span>
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-800 to-black opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        </button>
+
+        {/* Trust Badge */}
+
+      </form>
+    </div>
+  )
+}
