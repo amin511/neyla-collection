@@ -1,5 +1,8 @@
 import { getWooCredentials, wooConfig } from "@/lib/config"
 
+// ISR: Revalidate every 5 minutes
+export const revalidate = 300
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -24,6 +27,7 @@ export async function GET(request: Request) {
           Authorization: authHeader,
           "Content-Type": "application/json",
         },
+        next: { revalidate: 300 }
       })
 
       if (catResponse.ok) {
@@ -43,6 +47,7 @@ export async function GET(request: Request) {
         Authorization: authHeader,
         "Content-Type": "application/json",
       },
+      next: { revalidate: 300 }
     })
 
     console.log("[v0] WooCommerce API response status:", response.status)

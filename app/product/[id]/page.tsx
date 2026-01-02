@@ -4,6 +4,9 @@ import Footer from "@/components/footer"
 import ProductDetailClient from "@/components/product-detail-client"
 import { getWooCredentials, wooConfig } from "@/lib/config"
 
+// ISR: Revalidate every 10 minutes (600 seconds)
+export const revalidate = 600
+
 async function getProduct(id: string) {
   try {
     const { storeUrl, authHeader } = getWooCredentials()
@@ -13,7 +16,7 @@ async function getProduct(id: string) {
       headers: {
         Authorization: authHeader,
       },
-      cache: "no-store",
+      next: { revalidate: 600 }
     })
 
     if (!response.ok) {
@@ -37,7 +40,7 @@ async function getRelatedProducts(currentProductId: string) {
       headers: {
         Authorization: authHeader,
       },
-      cache: "no-store",
+      next: { revalidate: 600 }
     })
 
     if (!response.ok) {
@@ -61,7 +64,7 @@ async function getCategories() {
       headers: {
         Authorization: authHeader,
       },
-      cache: "no-store",
+      next: { revalidate: 600 }
     })
 
     if (!response.ok) {
@@ -72,6 +75,34 @@ async function getCategories() {
     return categories
   } catch (error) {
     console.error("[v0] Error fetching categories:", error)
+    return []
+  }
+}
+
+// Generate static params for popular products
+export async function generateStaticParams() {
+  try {
+    const { storeUrl, authHeader } = getWooCredentials()
+    const apiUrl = `${storeUrl}/wp-json/wc/v3/products?per_page=20&status=publish&orderby=popularity`
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        Authorization: authHeader,
+      },
+      next: { revalidate: 3600 } // Revalidate every hour
+    })
+
+    if (!response.ok) {
+      return []
+    }
+
+    const products = await response.json()
+
+    return products.map((product: any) => ({
+      id: String(product.id),
+    }))
+  } catch (error) {
+    console.error("[generateStaticParams] Error:", error)
     return []
   }
 }

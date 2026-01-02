@@ -50,7 +50,7 @@ export async function GET() {
         const zonesUrl = buildApiUrl("shipping/zones")
         const zonesResponse = await fetch(zonesUrl, {
             headers,
-            next: { revalidate: 300 }, // Cache for 5 minutes
+            cache: "force-cache",
         })
 
         if (!zonesResponse.ok) {
@@ -70,7 +70,7 @@ export async function GET() {
                 const locationsUrl = buildApiUrl(`shipping/zones/${zone.id}/locations`)
                 const locationsResponse = await fetch(locationsUrl, {
                     headers,
-                    next: { revalidate: 300 },
+                    cache: "force-cache",
                 })
                 const locations: ShippingLocation[] = locationsResponse.ok
                     ? await locationsResponse.json()
@@ -80,7 +80,7 @@ export async function GET() {
                 const methodsUrl = buildApiUrl(`shipping/zones/${zone.id}/methods`)
                 const methodsResponse = await fetch(methodsUrl, {
                     headers,
-                    next: { revalidate: 300 },
+                    cache: "force-cache",
                 })
                 const methods: ShippingMethod[] = methodsResponse.ok
                     ? await methodsResponse.json()

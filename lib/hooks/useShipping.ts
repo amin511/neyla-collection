@@ -133,8 +133,7 @@ function parseShippingCost(costString: string | undefined): number {
  */
 async function fetchShippingZonesData(): Promise<ParsedShippingZone[]> {
     const response = await fetch("/api/shipping", {
-        cache: "force-cache",
-        next: { revalidate: 300 },
+        cache: "no-store",
     } as RequestInit)
 
     if (!response.ok) {
@@ -142,7 +141,7 @@ async function fetchShippingZonesData(): Promise<ParsedShippingZone[]> {
     }
 
     const data: ShippingApiResponse = await response.json()
-
+    console.log("[useShipping] Fetched shipping zones:", data)
     if (!data.success) {
         throw new Error("API returned error")
     }

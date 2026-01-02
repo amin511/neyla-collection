@@ -1,5 +1,8 @@
 import { getWooCredentials, wooConfig, navigationConfig } from "@/lib/config"
 
+// ISR: Revalidate every 10 minutes
+export const revalidate = 600
+
 export async function GET() {
   try {
     const { storeUrl, authHeader } = getWooCredentials()
@@ -12,6 +15,7 @@ export async function GET() {
         Authorization: authHeader,
         "Content-Type": "application/json",
       },
+      next: { revalidate: 600 }
     })
 
     if (!response.ok) {

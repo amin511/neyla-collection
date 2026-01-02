@@ -1,12 +1,10 @@
-"use client"
-
-import { useEffect, useState, Suspense } from "react"
-import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import ProductCard from "@/components/product-card"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { getWooCredentials } from "@/lib/config"
 
 interface Product {
   id: number
@@ -23,70 +21,86 @@ interface Category {
   parent: number
 }
 
-function ProductsContent() {
-  const searchParams = useSearchParams()
-  const categorySlug = searchParams.get("category")
-  
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [categoryName, setCategoryName] = useState<string | null>(null)
+// ISR: Revalidate every 5 minutes (300 seconds)
+export const revalidate = 300
 
-  // Fetch category name if category slug is provided
-  useEffect(() => {
+async function getProducts(categorySlug?: string | null) {
+  try {
+    const { storeUrl, authHeader } = getWooCredentials()
+    let apiUrl = `${storeUrl}/wp-json/wc/v3/products?per_page=100&page=1&status=publish`
+
     if (categorySlug) {
-      fetch("/api/categories")
-        .then((res) => res.json())
-        .then((categories: Category[]) => {
-          const category = categories.find((cat) => cat.slug === categorySlug)
-          if (category) {
-            setCategoryName(category.name)
-          }
-        })
-        .catch((err) => console.error("Error fetching category:", err))
-    } else {
-      setCategoryName(null)
-    }
-  }, [categorySlug])
+      const categoriesUrl = `${storeUrl}/wp-json/wc/v3/products/categories?slug=${categorySlug}`
+      const catResponse = await fetch(categoriesUrl, {
+        headers: {
+          Authorization: authHeader,
+        },
+        next: { revalidate: 300 }
+      })
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true)
-        // Build API URL with category filter if provided
-        let apiUrl = "/api/products?per_page=100&page=1"
-        if (categorySlug) {
-          apiUrl += `&category=${encodeURIComponent(categorySlug)}`
+      if (catResponse.ok) {
+        const categories = await catResponse.json()
+        if (categories.length > 0) {
+          apiUrl += `&category=${categories[0].id}`
         }
-        
-        const response = await fetch(apiUrl)
-        const data = await response.json()
-
-        if (!response.ok) {
-          const errorMsg = data.message || data.error || "Failed to fetch products"
-          console.error("[v0] API Error:", data)
-          throw new Error(errorMsg)
-        }
-
-        console.log("[v0] Products fetched:", data.length)
-        setProducts(data)
-        setError(null)
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "An error occurred"
-        console.error("[v0] Error fetching products:", errorMessage)
-        setError(errorMessage)
-      } finally {
-        setLoading(false)
       }
     }
 
-    fetchProducts()
-  }, [categorySlug])
+    const response = await fetch(apiUrl, {
+      headers: {
+        Authorization: authHeader,
+      },
+      next: { revalidate: 300 }
+    })
+
+    if (!response.ok) {
+      console.error("[Products] API Error:", response.status)
+      return []
+    }
+
+    const products = await response.json()
+    return products
+  } catch (error) {
+    console.error("[Products] Error fetching products:", error)
+    return []
+  }
+}
+
+async function getCategories() {
+  try {
+    const { storeUrl, authHeader } = getWooCredentials()
+    const response = await fetch(`${storeUrl}/wp-json/wc/v3/products/categories?per_page=100&hide_empty=true`, {
+      headers: {
+        Authorization: authHeader,
+      },
+      next: { revalidate: 300 }
+    })
+
+    if (!response.ok) {
+      return []
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("[Products] Error fetching categories:", error)
+    return []
+  }
+}
+
+async function ProductsContent({ categorySlug }: { categorySlug?: string | null }) {
+  const [products, categories] = await Promise.all([
+    getProducts(categorySlug),
+    getCategories()
+  ])
+
+  const category = categorySlug
+    ? categories.find((cat: Category) => cat.slug === categorySlug)
+    : null
 
   return (
     <main className="min-h-screen bg-background">
       <Header />
-      
+
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Back Button */}
         <Link
@@ -99,9 +113,9 @@ function ProductsContent() {
 
         {/* Page Title */}
         <h1 className="text-3xl md:text-4xl font-light mb-8 text-foreground">
-          {categoryName || "Tous les Produits"}
+          {category?.name || "Tous les Produits"}
         </h1>
-        
+
         {categorySlug && (
           <Link
             href="/products"
@@ -112,25 +126,11 @@ function ProductsContent() {
         )}
 
         {/* Products Grid */}
-        {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="aspect-[3/4] bg-muted rounded-sm mb-4" />
-                <div className="h-4 bg-muted rounded mb-2" />
-                <div className="h-4 bg-muted rounded w-2/3" />
-              </div>
-            ))}
-          </div>
-        ) : error ? (
-          <div className="p-8 bg-destructive/10 border border-destructive rounded-sm">
-            <p className="text-destructive font-medium">Impossible de charger les produits: {error}</p>
-          </div>
-        ) : products.length === 0 ? (
+        {products.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">
-              {categoryName 
-                ? `Aucun produit disponible dans la catégorie "${categoryName}"`
+              {category?.name
+                ? `Aucun produit disponible dans la catégorie "${category.name}"`
                 : "Aucun produit disponible"
               }
             </p>
@@ -167,31 +167,7 @@ function ProductsContent() {
   )
 }
 
-export default function ProductsPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen bg-background">
-          <Header />
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <div className="h-8 bg-muted rounded w-32 mb-8 animate-pulse"></div>
-            <div className="h-10 bg-muted rounded w-64 mb-8 animate-pulse"></div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="aspect-[3/4] bg-muted rounded-sm mb-4" />
-                  <div className="h-4 bg-muted rounded mb-2" />
-                  <div className="h-4 bg-muted rounded w-2/3" />
-                </div>
-              ))}
-            </div>
-          </div>
-          <Footer />
-        </main>
-      }
-    >
-      <ProductsContent />
-    </Suspense>
-  )
+export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
+  const params = await searchParams
+  return <ProductsContent categorySlug={params.category} />
 }
-
