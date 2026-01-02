@@ -44,7 +44,7 @@ export const navigationConfig = {
     // Announcement bar content
     announcement: {
         enabled: true,
-        text: "Livraison partout en Algérie 📦",
+        text: "Livraison partout en Algérie",
         link: null as string | null,
     },
 

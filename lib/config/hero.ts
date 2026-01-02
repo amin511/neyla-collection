@@ -17,19 +17,19 @@ export interface HeroSlide {
 export const heroConfig = {
     // Auto-rotate settings
     autoRotate: true,
-    rotateInterval: 4000, // milliseconds
+    rotateInterval: 10000, // milliseconds
 
     // Slides
     slides: [
         {
-            image: "/images/WhatsApp1.jpeg",
-            title: "NEW Collection 2026",
+            image: "/images/hero.jpeg",
+            title: "Neyla Collection",
             subtitle: "",
             overlay: 30,
         },
         {
-            image: "/images/WhatsApp2.jpeg",
-            title: "NEW Collection 2026",
+            image: "/images/hero.jpeg",
+            title: "Collection 2026",
             subtitle: "",
             overlay: 30,
         },
@@ -37,8 +37,8 @@ export const heroConfig = {
 
     // Hero height
     height: {
-        mobile: "400px",
-        desktop: "600px",
+        mobile: "65vh",
+        desktop: "1000px",
     },
 
     // Typography styles

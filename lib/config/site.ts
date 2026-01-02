@@ -6,48 +6,52 @@
 
 export const siteConfig = {
     // Brand Information
-    name: "NAALA",
+    name: "NEYLA COLLECTION",
     tagline: "Fashion & Lifestyle",
-    description: "Discover elegant fashion and lifestyle collections from NAALA. New collection 2025 featuring traditional and contemporary designs.",
+    description: "Discover elegant fashion and lifestyle collections from NEYLA COLLECTION. New collection 2026 featuring traditional and contemporary designs.",
 
     // URLs
-    url: process.env.NEXT_PUBLIC_SITE_URL || "https://naalasbrand.com",
+    url: process.env.NEXT_PUBLIC_SITE_URL || "https://neylacollection.com",
 
     // Logo & Branding
     logo: {
-        src: "/images/nalalogo.png",
-        alt: "NAALA",
+        src: "/images/neylalogo2.png",
+        alt: "NEYLA COLLECTION",
         width: 120,
-        height: 50,
+        height: 60,
     },
-    favicon: "/favicon.svg",
+    favicon: "/images/neylalogo2.png",
 
     // Contact Information
     contact: {
-        email: "Naalasbrand@gmail.com",
-        phone: "+213770499357",
-        phoneDisplay: "07 70 49 93 57",
-        address: "Algiers, Bordj el kiffan centre",
-        mapUrl: "https://maps.app.goo.gl/fqYdbdd2hrBqNUxX6",
+        email: "neylacollection@gmail.com",
+        phone: "+213557084431",
+        phoneDisplay: "0557 08 44 31",
+        address: "Algiers, Algeria",
+        mapUrl: "",
     },
 
     // Social Media
     social: {
         instagram: {
-            url: "https://www.instagram.com/naalasbrand/",
-            handle: "@naalasbrand",
+            url: "https://www.instagram.com/neyla_collection_/",
+            handle: "@neyla_collection_",
         },
         facebook: {
-            url: "",
-            handle: "",
+            url: "https://www.facebook.com/p/Neyla-Collection-61570652681294/",
+            handle: "Neyla collection",
         },
         twitter: {
             url: "",
             handle: "",
         },
         tiktok: {
-            url: "",
-            handle: "",
+            url: "https://www.tiktok.com/@neyla.collection",
+            handle: "@neyla.collection",
+        },
+        whatsapp: {
+            url: "https://wa.me/213557084431",
+            phone: "+213557084431",
         },
     },
 
@@ -62,12 +66,12 @@ export const siteConfig = {
 
     // SEO
     seo: {
-        titleTemplate: "%s | NAALA",
-        defaultTitle: "NAALA - Fashion & Lifestyle",
+        titleTemplate: "%s | NEYLA COLLECTION",
+        defaultTitle: "NEYLA COLLECTION - Fashion & Lifestyle",
         openGraph: {
             type: "website",
             locale: "fr_DZ",
-            siteName: "NAALA",
+            siteName: "NEYLA COLLECTION",
         },
     },
 
@@ -91,7 +95,7 @@ export const siteConfig = {
      * - "cart"  : Only add to cart button (redirect to cart/checkout)
      * - "both"  : Both options available (form + add to cart button)
      */
-    checkoutMode: "cart" as "form" | "cart" | "both",
+    checkoutMode: "both" as "form" | "cart" | "both",
 
     /**
      * Add to Cart Redirect Configuration
@@ -102,7 +106,7 @@ export const siteConfig = {
      * - "checkout" : Redirect directly to checkout page (/checkout)
      * - "stay"     : Stay on the current page (no redirect)
      */
-    addToCartRedirect: "checkout" as "cart" | "checkout" | "stay",
+    addToCartRedirect: "cart" as "cart" | "checkout" | "stay",
 
     // Copyright
     copyright: {

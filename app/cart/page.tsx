@@ -27,37 +27,52 @@ interface CartItem {
 }
 
 export default function CartPage() {
-  const [cartItem, setCartItem] = useState<CartItem | null>(null)
+  const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
     const loadCart = () => {
-      const stored = localStorage.getItem("cartItem")
+      const stored = localStorage.getItem("cartItems")
       if (stored) {
-        setCartItem(JSON.parse(stored))
+        setCartItems(JSON.parse(stored))
       }
       setIsLoading(false)
     }
     loadCart()
+
+    // Listen for cart updates
+    const handleCartUpdate = () => {
+      loadCart()
+    }
+    window.addEventListener("cartUpdated", handleCartUpdate)
+    return () => window.removeEventListener("cartUpdated", handleCartUpdate)
   }, [])
 
-  const updateQuantity = (newQuantity: number) => {
-    if (!cartItem || newQuantity < 1) return
+  const updateQuantity = (index: number, newQuantity: number) => {
+    if (newQuantity < 1) return
 
-    const updatedItem = { ...cartItem, quantity: newQuantity }
-    setCartItem(updatedItem)
-    localStorage.setItem("cartItem", JSON.stringify(updatedItem))
+    const updatedItems = [...cartItems]
+    updatedItems[index].quantity = newQuantity
+    setCartItems(updatedItems)
+    localStorage.setItem("cartItems", JSON.stringify(updatedItems))
     window.dispatchEvent(new Event("cartUpdated"))
   }
 
-  const removeItem = () => {
-    setCartItem(null)
-    localStorage.removeItem("cartItem")
+  const removeItem = (index: number) => {
+    const updatedItems = cartItems.filter((_, i) => i !== index)
+    setCartItems(updatedItems)
+    localStorage.setItem("cartItems", JSON.stringify(updatedItems))
+    if (updatedItems.length === 0) {
+      localStorage.removeItem("cartItem")
+    }
     window.dispatchEvent(new Event("cartUpdated"))
   }
 
-  const subtotal = cartItem ? Number.parseFloat(cartItem.price) * cartItem.quantity : 0
+  const subtotal = cartItems.reduce(
+    (sum, item) => sum + Number.parseFloat(item.price) * item.quantity,
+    0
+  )
   const shipping = 0 // Free shipping
   const total = subtotal + shipping
 
@@ -84,10 +99,12 @@ export default function CartPage() {
         {/* Page Title */}
         <div className="flex items-center gap-3 mb-8 md:mb-12">
           <ShoppingBag className="w-6 h-6 text-accent" />
-          <h1 className="text-2xl md:text-3xl font-light tracking-wide">Mon Panier</h1>
+          <h1 className="text-2xl md:text-3xl font-light tracking-wide">
+            Mon Panier {cartItems.length > 0 && `(${cartItems.length})`}
+          </h1>
         </div>
 
-        {!cartItem ? (
+        {cartItems.length === 0 ? (
           /* Empty Cart State */
           <div className="text-center py-16 md:py-24">
             <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-secondary flex items-center justify-center">
@@ -109,72 +126,74 @@ export default function CartPage() {
           /* Cart with Items */
           <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Cart Items */}
-            <div className="lg:col-span-2">
-              <div className="border border-border rounded-sm overflow-hidden bg-card">
-                {/* Item */}
-                <div className="p-4 md:p-6">
-                  <div className="flex gap-4 md:gap-6">
-                    {/* Product Image */}
-                    <div className="relative w-24 h-32 md:w-32 md:h-40 flex-shrink-0 bg-secondary rounded-sm overflow-hidden">
-                      <Image
-                        src={cartItem.image}
-                        alt={cartItem.name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-
-                    {/* Product Details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start gap-2">
-                        <div>
-                          <h3 className="font-medium text-foreground mb-1 line-clamp-2">
-                            {cartItem.name}
-                          </h3>
-                          {cartItem.size && (
-                            <p className="text-sm text-muted-foreground mb-2">
-                              Taille: <span className="text-foreground">{cartItem.size}</span>
-                            </p>
-                          )}
-                        </div>
-                        <button
-                          onClick={removeItem}
-                          className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                          aria-label="Supprimer l'article"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+            <div className="lg:col-span-2 space-y-4">
+              {cartItems.map((item, index) => (
+                <div key={`${item.id}-${item.size}-${index}`} className="border border-border rounded-sm overflow-hidden bg-card">
+                  {/* Item */}
+                  <div className="p-4 md:p-6">
+                    <div className="flex gap-4 md:gap-6">
+                      {/* Product Image */}
+                      <div className="relative w-24 h-32 md:w-32 md:h-40 flex-shrink-0 bg-secondary rounded-sm overflow-hidden">
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          fill
+                          className="object-cover"
+                        />
                       </div>
 
-                      {/* Price */}
-                      <p className="text-lg font-medium text-accent mb-4">
-                        {formatPrice(Number.parseFloat(cartItem.price))}
-                      </p>
+                      {/* Product Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-2">
+                          <div>
+                            <h3 className="font-medium text-foreground mb-1 line-clamp-2">
+                              {item.name}
+                            </h3>
+                            {item.size && (
+                              <p className="text-sm text-muted-foreground mb-2">
+                                Taille: <span className="text-foreground">{item.size}</span>
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => removeItem(index)}
+                            className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                            aria-label="Supprimer l'article"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
 
-                      {/* Quantity Controls */}
-                      <div className="flex items-center gap-1">
-                        <span className="text-sm text-muted-foreground mr-3">Quantité:</span>
-                        <button
-                          onClick={() => updateQuantity(cartItem.quantity - 1)}
-                          disabled={cartItem.quantity <= 1}
-                          className="w-8 h-8 flex items-center justify-center border border-border rounded-sm hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          aria-label="Diminuer la quantité"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="w-12 text-center font-medium">{cartItem.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(cartItem.quantity + 1)}
-                          className="w-8 h-8 flex items-center justify-center border border-border rounded-sm hover:bg-secondary transition-colors"
-                          aria-label="Augmenter la quantité"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
+                        {/* Price */}
+                        <p className="text-lg font-medium text-accent mb-4">
+                          {formatPrice(Number.parseFloat(item.price))}
+                        </p>
+
+                        {/* Quantity Controls */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm text-muted-foreground mr-3">Quantité:</span>
+                          <button
+                            onClick={() => updateQuantity(index, item.quantity - 1)}
+                            disabled={item.quantity <= 1}
+                            className="w-8 h-8 flex items-center justify-center border border-border rounded-sm hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label="Diminuer la quantité"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="w-12 text-center font-medium">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(index, item.quantity + 1)}
+                            className="w-8 h-8 flex items-center justify-center border border-border rounded-sm hover:bg-secondary transition-colors"
+                            aria-label="Augmenter la quantité"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              ))}
 
               {/* Continue Shopping Link */}
               <Link

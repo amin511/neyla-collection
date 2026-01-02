@@ -5,7 +5,7 @@
 
 :root {
   /* Updated design tokens for elegant luxury fashion brand */
-  --background: oklch(0.985 0 0);
+  --background: white;
   --foreground: oklch(0.15 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.15 0 0);
@@ -13,7 +13,7 @@
   --popover-foreground: oklch(0.15 0 0);
   --primary: oklch(0.15 0 0);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.92 0.02 70);
+  --secondary: #d681a0;
   --secondary-foreground: oklch(0.15 0 0);
   --muted: oklch(0.88 0 0);
   --muted-foreground: oklch(0.5 0 0);
@@ -121,8 +121,9 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-white text-foreground;
   }
 }
 
@@ -132,6 +133,7 @@
     opacity: 0;
     transform: translateX(-20px);
   }
+
   100% {
     opacity: 1;
     transform: translateX(0);
@@ -148,6 +150,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -164,6 +167,7 @@
     opacity: 0;
     transform: scale(0.95);
   }
+
   100% {
     opacity: 1;
     transform: scale(1);

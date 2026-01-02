@@ -28,6 +28,7 @@ export default function CheckoutForm() {
     adresse: "",
   })
   const [product, setProduct] = useState<any>(null)
+  const [cartItems, setCartItems] = useState<any[]>([])
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -35,10 +36,14 @@ export default function CheckoutForm() {
   const { shippingData, loading: shippingLoading } = useWilayaShipping(wilaya || null)
 
   useEffect(() => {
-    const cartItem = localStorage.getItem("cartItem")
-    if (cartItem) {
-      const parsedItem = JSON.parse(cartItem)
-      setProduct(parsedItem)
+    const cartItemsData = localStorage.getItem("cartItems")
+    if (cartItemsData) {
+      const parsedItems = JSON.parse(cartItemsData)
+      setCartItems(parsedItems)
+      // Keep single item for backward compatibility
+      if (parsedItems.length > 0) {
+        setProduct(parsedItems[0])
+      }
     }
   }, [])
 
@@ -52,7 +57,10 @@ export default function CheckoutForm() {
   }, [shippingData])
 
   // Calcul du sous-total et livraison
-  const sousTotal = product ? Number.parseFloat(product.price) * quantity : 0
+  const sousTotal = cartItems.reduce(
+    (sum, item) => sum + Number.parseFloat(item.price) * item.quantity,
+    0
+  )
 
   // Calcul dynamique des frais de livraison depuis WooCommerce
   const livraison = useMemo(() => {
@@ -73,7 +81,7 @@ export default function CheckoutForm() {
 
   const total = sousTotal + livraison
 
-  if (!product) {
+  if (cartItems.length === 0) {
     return (
       <div className="max-w-md mx-auto px-4 py-16 text-center">
         <p className="text-muted-foreground mb-4">Votre panier est vide</p>
@@ -96,8 +104,13 @@ export default function CheckoutForm() {
 
     try {
       const orderPayload = {
-        product_id: product.id,
-        quantity,
+        product_id: cartItems.map(item => item.id).join(','),
+        product_name: cartItems.map(item => item.name).join(', '),
+        product_image: cartItems[0]?.image || '',
+        price: sousTotal.toFixed(2),
+        size: cartItems.map(item => `${item.name}: ${item.size || 'N/A'}`).join(', '),
+        quantity: cartItems.reduce((sum, item) => sum + item.quantity, 0),
+        items: cartItems,
         prenom: formData.prenom,
         telephone: formData.telephone,
         wilaya,
@@ -128,6 +141,7 @@ export default function CheckoutForm() {
 
       // Clear cart
       localStorage.removeItem("cartItem")
+      localStorage.removeItem("cartItems")
 
       // Redirect to thank you page with order details
       router.push(`/thank-you?order=${result.order_number || result.order_id}`)
@@ -378,20 +392,27 @@ export default function CheckoutForm() {
 
           {/* Product Summary Card */}
           <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="flex items-start gap-3 mb-4 pb-4 border-b border-gray-200">
-              <div className="relative w-16 h-20 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
-                <div className="absolute -top-2 -right-2 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium z-10">
-                  {quantity}
+            <h3 className="font-medium mb-4">Résumé de la commande</h3>
+
+            {/* Cart Items */}
+            <div className="space-y-3 mb-4 pb-4 border-b border-gray-200">
+              {cartItems.map((item, index) => (
+                <div key={`${item.id}-${item.size}-${index}`} className="flex items-start gap-3">
+                  <div className="relative w-16 h-20 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                    <div className="absolute -top-2 -right-2 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium z-10">
+                      {item.quantity}
+                    </div>
+                    <Image src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm mb-1">{item.name}</h4>
+                    {item.size && <p className="text-xs text-gray-500">Taille: {item.size}</p>}
+                    <p className="text-xs text-gray-600 mt-1">
+                      DA {(Number.parseFloat(item.price) * item.quantity).toLocaleString()}.00
+                    </p>
+                  </div>
                 </div>
-                <Image src={product.image || "/placeholder.svg"} alt={product.name} fill className="object-cover" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-medium text-sm mb-1">{product.name}</h3>
-                <p className="text-xs text-gray-500">{product.size}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold">DA {total.toLocaleString()}.00</p>
-              </div>
+              ))}
             </div>
 
             <div className="space-y-3 text-sm">

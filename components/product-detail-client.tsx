@@ -72,7 +72,7 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
       return
     }
 
-    const cartItem = {
+    const newItem = {
       id: product.id,
       name: product.name,
       price: product.price,
@@ -81,7 +81,29 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
       quantity: 1,
     }
 
-    localStorage.setItem("cartItem", JSON.stringify(cartItem))
+    // Get existing cart items
+    const existingCart = localStorage.getItem("cartItems")
+    let cartItems = existingCart ? JSON.parse(existingCart) : []
+
+    // Check if item with same id and size already exists
+    const existingItemIndex = cartItems.findIndex(
+      (item: any) => item.id === newItem.id && item.size === newItem.size
+    )
+
+    if (existingItemIndex > -1) {
+      // Item exists, increment quantity
+      cartItems[existingItemIndex].quantity += 1
+    } else {
+      // New item, add to cart
+      cartItems.push(newItem)
+    }
+
+    // Save updated cart
+    localStorage.setItem("cartItems", JSON.stringify(cartItems))
+
+    // Also keep single item for backward compatibility
+    localStorage.setItem("cartItem", JSON.stringify(newItem))
+
     window.dispatchEvent(new Event("cartUpdated"))
 
     if (checkoutMode === "cart") {

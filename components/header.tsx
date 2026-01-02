@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Menu, Search, ShoppingCart, X, ChevronDown, ChevronRight } from "lucide-react"
+import { Menu, Search, ShoppingBag, X, ChevronDown, ChevronRight } from "lucide-react"
 import { siteConfig, navigationConfig } from "@/lib/config"
 
 interface Category {
@@ -24,8 +24,14 @@ export default function Header() {
 
   useEffect(() => {
     const checkCart = () => {
-      const cartItem = localStorage.getItem("cartItem")
-      setCartCount(cartItem ? 1 : 0)
+      const cartItems = localStorage.getItem("cartItems")
+      if (cartItems) {
+        const items = JSON.parse(cartItems)
+        const totalCount = items.reduce((sum: number, item: any) => sum + item.quantity, 0)
+        setCartCount(totalCount)
+      } else {
+        setCartCount(0)
+      }
     }
 
     checkCart()
@@ -73,14 +79,14 @@ export default function Header() {
   }
 
   return (
-    <header className="border-b border-border bg-background sticky top-0 z-40">
+    <header className="border-b bg-white border-border bg-background sticky top-0 z-40">
       {navigationConfig.announcement.enabled && (
-        <div className="bg-secondary text-secondary-foreground text-center py-2 text-sm">
+        <div className="bg-secondary text-white text-center py-2 text-sm">
           {navigationConfig.announcement.text}
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 h-[80px] py-4 flex items-center justify-between">
         <button
           className="text-foreground hover:text-accent transition-colors"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -96,7 +102,7 @@ export default function Header() {
             alt={siteConfig.logo.alt}
             width={siteConfig.logo.width}
             height={siteConfig.logo.height}
-            className="h-12 w-auto object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
+            className="h-19 w-auto object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
             priority
           />
         </Link>
@@ -110,7 +116,7 @@ export default function Header() {
             <Search className="w-5 h-5" />
           </button>
           <Link href="/cart" className="relative">
-            <ShoppingCart className="w-5 h-5 text-foreground hover:text-accent transition-colors" />
+            <ShoppingBag className="w-5 h-5 text-foreground hover:text-accent transition-colors" />
             {cartCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-accent text-accent-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
                 {cartCount}
