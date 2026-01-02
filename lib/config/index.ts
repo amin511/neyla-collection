@@ -24,6 +24,7 @@ export {
     type ShippingRate,
     type DeliveryMethodInfo,
 } from "./shipping"
+export { ALGERIA_WILAYAS, ALGERIA_COMMUNES, getCommunesByWilaya, isValidWilaya, isValidCommune, type AlgeriaWilaya } from "./country"
 
 /**
  * Price formatting utility using site config

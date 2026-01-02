@@ -1,6 +1,20 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+
+// Cache global pour éviter les multiples appels API
+let globalShippingCache: {
+    data: ParsedShippingZone[] | null
+    timestamp: number
+    promise: Promise<ParsedShippingZone[]> | null
+} = {
+    data: null,
+    timestamp: 0,
+    promise: null,
+}
+
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+const STORAGE_KEY = "shipping_zones_cache"
 
 export interface ShippingZone {
     id: number
@@ -52,6 +66,50 @@ export interface ParsedShippingZone {
 }
 
 /**
+ * Load cached shipping data from localStorage
+ */
+function loadFromCache(): ParsedShippingZone[] | null {
+    if (typeof window === "undefined") return null
+
+    try {
+        const cached = localStorage.getItem(STORAGE_KEY)
+        if (!cached) return null
+
+        const { data, timestamp } = JSON.parse(cached)
+        const now = Date.now()
+
+        // Check if cache is still valid
+        if (now - timestamp < CACHE_DURATION) {
+            return data
+        }
+
+        // Cache expired, remove it
+        localStorage.removeItem(STORAGE_KEY)
+        return null
+    } catch (error) {
+        console.error("[useShipping] Cache load error:", error)
+        return null
+    }
+}
+
+/**
+ * Save shipping data to localStorage
+ */
+function saveToCache(data: ParsedShippingZone[]) {
+    if (typeof window === "undefined") return
+
+    try {
+        const cacheData = {
+            data,
+            timestamp: Date.now(),
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cacheData))
+    } catch (error) {
+        console.error("[useShipping] Cache save error:", error)
+    }
+}
+
+/**
  * Parse shipping method cost from WooCommerce format
  * WooCommerce can use formulas like "10.00 * [qty]", we extract the base cost
  */
@@ -71,62 +129,122 @@ function parseShippingCost(costString: string | undefined): number {
 }
 
 /**
+ * Fetch shipping zones from API (internal function)
+ */
+async function fetchShippingZonesData(): Promise<ParsedShippingZone[]> {
+    const response = await fetch("/api/shipping", {
+        cache: "force-cache",
+        next: { revalidate: 300 },
+    } as RequestInit)
+
+    if (!response.ok) {
+        throw new Error("Failed to fetch shipping zones")
+    }
+
+    const data: ShippingApiResponse = await response.json()
+
+    if (!data.success) {
+        throw new Error("API returned error")
+    }
+
+    // Parse zones into a simpler format
+    return data.zones.map((zone) => ({
+        id: zone.id,
+        name: zone.name,
+        locations: zone.locations.map((l) => l.code),
+        methods: zone.methods.map((method) => ({
+            id: method.instance_id,
+            methodId: method.method_id,
+            title: method.settings.title?.value || method.title || method.method_title,
+            cost: parseShippingCost(method.settings.cost?.value),
+            description: method.method_description.replace(/<[^>]*>/g, "").trim(),
+            isFree: method.method_id === "free_shipping",
+            minAmount: method.settings.min_amount
+                ? parseFloat(method.settings.min_amount.value)
+                : undefined,
+        })),
+    }))
+}
+
+/**
  * Hook to fetch and manage shipping zones from WooCommerce
+ * Optimized with global cache and localStorage
  */
 export function useShippingZones() {
-    const [zones, setZones] = useState<ParsedShippingZone[]>([])
-    const [loading, setLoading] = useState(true)
+    const [zones, setZones] = useState<ParsedShippingZone[]>(() => {
+        // Try to load from global cache first
+        if (globalShippingCache.data) {
+            return globalShippingCache.data
+        }
+        // Try to load from localStorage
+        return loadFromCache() || []
+    })
+    const [loading, setLoading] = useState(() => {
+        // Only show loading if we don't have cached data
+        return !globalShippingCache.data && !loadFromCache()
+    })
     const [error, setError] = useState<string | null>(null)
+    const isMountedRef = useRef(false)
 
     const fetchShippingZones = useCallback(async () => {
-        setLoading(true)
+        const now = Date.now()
+
+        // Check if we have valid cached data in global cache
+        if (
+            globalShippingCache.data &&
+            now - globalShippingCache.timestamp < CACHE_DURATION
+        ) {
+            setZones(globalShippingCache.data)
+            setLoading(false)
+            return
+        }
+
+        // If there's already a pending request, wait for it
+        if (globalShippingCache.promise) {
+            try {
+                const data = await globalShippingCache.promise
+                setZones(data)
+                setLoading(false)
+                return
+            } catch (err) {
+                // Continue to make a new request if the pending one failed
+            }
+        }
+
+        // Start loading
+        if (!globalShippingCache.data) {
+            setLoading(true)
+        }
         setError(null)
 
         try {
-            const response = await fetch("/api/shipping", {
-                cache: "force-cache",
-                next: { revalidate: 300 },
-            } as RequestInit)
+            // Create a new fetch promise and store it
+            const fetchPromise = fetchShippingZonesData()
+            globalShippingCache.promise = fetchPromise
 
-            if (!response.ok) {
-                throw new Error("Failed to fetch shipping zones")
-            }
+            const parsedZones = await fetchPromise
 
-            const data: ShippingApiResponse = await response.json()
+            // Update all caches
+            globalShippingCache.data = parsedZones
+            globalShippingCache.timestamp = Date.now()
+            globalShippingCache.promise = null
 
-            if (!data.success) {
-                throw new Error("API returned error")
-            }
-
-            // Parse zones into a simpler format
-            const parsedZones: ParsedShippingZone[] = data.zones.map((zone) => ({
-                id: zone.id,
-                name: zone.name,
-                locations: zone.locations.map((l) => l.code),
-                methods: zone.methods.map((method) => ({
-                    id: method.instance_id,
-                    methodId: method.method_id,
-                    title: method.settings.title?.value || method.title || method.method_title,
-                    cost: parseShippingCost(method.settings.cost?.value),
-                    description: method.method_description.replace(/<[^>]*>/g, "").trim(),
-                    isFree: method.method_id === "free_shipping",
-                    minAmount: method.settings.min_amount
-                        ? parseFloat(method.settings.min_amount.value)
-                        : undefined,
-                })),
-            }))
-
+            saveToCache(parsedZones)
             setZones(parsedZones)
         } catch (err) {
             console.error("[useShippingZones] Error:", err)
             setError(err instanceof Error ? err.message : "Unknown error")
+            globalShippingCache.promise = null
         } finally {
             setLoading(false)
         }
     }, [])
 
     useEffect(() => {
-        fetchShippingZones()
+        if (!isMountedRef.current) {
+            isMountedRef.current = true
+            fetchShippingZones()
+        }
     }, [fetchShippingZones])
 
     /**
@@ -295,7 +413,7 @@ const WILAYA_CODE_MAP: Record<string, string> = {
     "Touggourt": "DZ:DZ-55",
     "Djanet": "DZ:DZ-56",
     "El M'Ghair": "DZ:DZ-57",
-    "El Meniaa": "DZ:DZ-58",
+    "El Menia": "DZ:DZ-58",
 }
 
 export interface WilayaShippingMethod {
@@ -319,15 +437,30 @@ export interface WilayaShippingData {
     cheapestMethod: WilayaShippingMethod | null
 }
 
+// Cache mémoire pour les données de wilaya
+const wilayaShippingCache = new Map<string, WilayaShippingData>()
+
 /**
  * Hook to get shipping data for a specific Algerian wilaya using WooCommerce API
  * This replaces the static shipping rates with dynamic data from WooCommerce
+ * Optimized with memoization cache per wilaya
  */
 export function useWilayaShipping(wilaya: string | null) {
     const { zones, loading, error, findZoneForLocation } = useShippingZones()
 
     const shippingData = useMemo((): WilayaShippingData | null => {
-        if (!wilaya || loading || zones.length === 0) return null
+        if (!wilaya) return null
+
+        // Return null while loading, but don't block if we have zones
+        if (loading && zones.length === 0) return null
+
+        // Check cache first for instant return
+        const cached = wilayaShippingCache.get(wilaya)
+        if (cached && zones.length > 0) {
+            return cached
+        }
+
+        if (zones.length === 0) return null
 
         // Get the WooCommerce location code for this wilaya (format: DZ:DZ-XX)
         const locationCode = WILAYA_CODE_MAP[wilaya]
@@ -336,19 +469,28 @@ export function useWilayaShipping(wilaya: string | null) {
             console.warn("[useWilayaShipping] No location code found for wilaya:", wilaya)
             return null
         }
-        console.log("[useWilayaShipping] Finding shipping zone for location code:", locationCode)
+
         // Find the zone for this location
         const zone = findZoneForLocation(locationCode)
+
+        let result: WilayaShippingData | null = null
 
         if (!zone) {
             // Try fallback to country-level zone
             const countryZone = findZoneForLocation("DZ")
             if (!countryZone) return null
 
-            return mapZoneToShippingData(countryZone)
+            result = mapZoneToShippingData(countryZone)
+        } else {
+            result = mapZoneToShippingData(zone)
         }
 
-        return mapZoneToShippingData(zone)
+        // Cache the result
+        if (result) {
+            wilayaShippingCache.set(wilaya, result)
+        }
+
+        return result
     }, [wilaya, zones, loading, findZoneForLocation])
 
     return {
@@ -428,6 +570,48 @@ function detectDeliveryType(title: string, methodId: string): "domicile" | "stop
     }
 
     return "other"
+}
+
+/**
+ * Preload shipping zones in the background
+ * Call this on app initialization for better UX
+ */
+export function preloadShippingZones() {
+    if (typeof window === "undefined") return
+
+    // Check if already cached
+    const now = Date.now()
+    if (
+        globalShippingCache.data &&
+        now - globalShippingCache.timestamp < CACHE_DURATION
+    ) {
+        return // Already loaded
+    }
+
+    // Check localStorage
+    const cached = loadFromCache()
+    if (cached) {
+        globalShippingCache.data = cached
+        globalShippingCache.timestamp = now
+        return
+    }
+
+    // Fetch in background without blocking
+    if (!globalShippingCache.promise) {
+        globalShippingCache.promise = fetchShippingZonesData()
+            .then((data) => {
+                globalShippingCache.data = data
+                globalShippingCache.timestamp = Date.now()
+                globalShippingCache.promise = null
+                saveToCache(data)
+                return data
+            })
+            .catch((err) => {
+                console.error("[preloadShippingZones] Error:", err)
+                globalShippingCache.promise = null
+                throw err
+            })
+    }
 }
 
 /**

@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Assistant, Playfair_Display } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { siteConfig } from "@/lib/config"
+import { ShippingPreloader } from "@/components/shipping-preloader"
 import "./globals.css"
 
 const assistant = Assistant({
@@ -31,6 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`antialiased ${assistant.className} ${playfair.variable}`}>
+        <ShippingPreloader />
         {children}
         <Analytics />
       </body>

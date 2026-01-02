@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo, useRef } from "react"
 import ProductCard from "./product-card"
 
 interface Product {
@@ -11,38 +11,163 @@ interface Product {
   stock_status: string
 }
 
+// Global cache with timestamp validation
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+const STORAGE_KEY = "products_cache"
+
+interface ProductsCache {
+  data: Product[] | null
+  timestamp: number
+  promise: Promise<Product[]> | null
+}
+
+const globalProductsCache: ProductsCache = {
+  data: null,
+  timestamp: 0,
+  promise: null,
+}
+
+// LocalStorage functions
+function loadFromCache(): Product[] | null {
+  if (typeof window === "undefined") return null
+
+  try {
+    const cached = localStorage.getItem(STORAGE_KEY)
+    if (!cached) return null
+
+    const { data, timestamp } = JSON.parse(cached)
+    const isValid = Date.now() - timestamp < CACHE_DURATION
+
+    if (isValid && data) {
+      console.log("[ProductsSection] Loaded from localStorage cache")
+      return data
+    }
+
+    // Clean expired cache
+    localStorage.removeItem(STORAGE_KEY)
+  } catch (error) {
+    console.error("[ProductsSection] Error loading cache:", error)
+  }
+
+  return null
+}
+
+function saveToCache(data: Product[]): void {
+  if (typeof window === "undefined") return
+
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        data,
+        timestamp: Date.now(),
+      })
+    )
+  } catch (error) {
+    console.error("[ProductsSection] Error saving cache:", error)
+  }
+}
+
+// Internal fetch function
+async function fetchProductsData(): Promise<Product[]> {
+  const response = await fetch("/api/products?per_page=20&category=caftans&page=1&orderby=modified&order=desc")
+  const data = await response.json()
+
+  if (!response.ok) {
+    const errorMsg = data.message || data.error || "Failed to fetch products"
+    console.error("[ProductsSection] API Error:", data)
+    throw new Error(errorMsg)
+  }
+
+  console.log("[ProductsSection] Products fetched from WooCommerce:", data)
+  return data
+}
+
 export default function ProductsSection() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
+  // Smart initial state - load from cache immediately
+  const [products, setProducts] = useState<Product[]>(() => {
+    const cachedData = loadFromCache()
+    if (cachedData) {
+      globalProductsCache.data = cachedData
+      globalProductsCache.timestamp = Date.now()
+      return cachedData
+    }
+    return globalProductsCache.data || []
+  })
+
+  const [loading, setLoading] = useState(() => !globalProductsCache.data)
   const [error, setError] = useState<string | null>(null)
+  const isMounted = useRef(true)
 
   useEffect(() => {
+    isMounted.current = true
+
     const fetchProducts = async () => {
       try {
-        setLoading(true)
-        const response = await fetch("/api/products?per_page=20&categoty=caftans&page=1&orderby=modified&order=desc")
-        const data = await response.json()
+        // Check if cache is still valid
+        const isCacheValid = globalProductsCache.data &&
+          Date.now() - globalProductsCache.timestamp < CACHE_DURATION
 
-        if (!response.ok) {
-          const errorMsg = data.message || data.error || "Failed to fetch products"
-          console.error("[v0] API Error:", data)
-          throw new Error(errorMsg)
+        if (isCacheValid) {
+          console.log("[ProductsSection] Using valid cache")
+          setProducts(globalProductsCache.data!)
+          setLoading(false)
+          setError(null)
+          return
         }
 
-        console.log("[v0] Products fetched from WooCommerce:", data)
-        setProducts(data)
-        setError(null)
+        // Check if there's already a pending request
+        if (globalProductsCache.promise) {
+          console.log("[ProductsSection] Reusing pending request")
+          const data = await globalProductsCache.promise
+
+          if (isMounted.current) {
+            setProducts(data)
+            setError(null)
+          }
+          return
+        }
+
+        // Create new fetch promise
+        setLoading(true)
+        globalProductsCache.promise = fetchProductsData()
+
+        const data = await globalProductsCache.promise
+
+        // Update cache
+        globalProductsCache.data = data
+        globalProductsCache.timestamp = Date.now()
+        saveToCache(data)
+
+        if (isMounted.current) {
+          setProducts(data)
+          setError(null)
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "An error occurred"
-        console.error("[v0] Error fetching products:", errorMessage)
-        setError(errorMessage)
+        console.error("[ProductsSection] Error fetching products:", errorMessage)
+
+        if (isMounted.current) {
+          setError(errorMessage)
+        }
       } finally {
-        setLoading(false)
+        globalProductsCache.promise = null
+
+        if (isMounted.current) {
+          setLoading(false)
+        }
       }
     }
 
     fetchProducts()
+
+    return () => {
+      isMounted.current = false
+    }
   }, [])
+
+  // Memoize product list to prevent unnecessary re-renders
+  const productList = useMemo(() => products, [products])
 
   if (loading) {
     return (
@@ -80,7 +205,7 @@ export default function ProductsSection() {
     )
   }
 
-  if (products.length === 0) {
+  if (productList.length === 0) {
     return (
       <section id="products" className="max-w-7xl mx-auto px-4 py-16 border-t border-border scroll-mt-20">
         <h2 className="text-xl font-light mb-8 text-foreground">Meilleurs ventes 2025</h2>
@@ -98,7 +223,7 @@ export default function ProductsSection() {
         Meilleurs ventes 2026
       </h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-        {products.map((product, index) => (
+        {productList.map((product, index) => (
           <ProductCard
             key={product.id}
             id={product.id}

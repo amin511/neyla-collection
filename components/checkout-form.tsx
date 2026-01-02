@@ -10,128 +10,12 @@ import {
   formatPrice,
   shippingConfig,
   isFreeShipping,
+  ALGERIA_WILAYAS,
+  ALGERIA_COMMUNES,
+  getCommunesByWilaya,
   type DeliveryMethod,
 } from "@/lib/config"
 import { useWilayaShipping, type WilayaShippingMethod } from "@/lib/hooks/useShipping"
-
-const WILAYAS = [
-  "Adrar",
-  "Chlef",
-  "Laghouat",
-  "Oum El Bouaghi",
-  "Batna",
-  "Béjaïa",
-  "Biskra",
-  "Béchar",
-  "Blida",
-  "Bouira",
-  "Tamanrasset",
-  "Tébessa",
-  "Tlemcen",
-  "Tiaret",
-  "Tizi Ouzou",
-  "Alger",
-  "Djelfa",
-  "Jijel",
-  "Sétif",
-  "Saïda",
-  "Skikda",
-  "Sidi Bel Abbès",
-  "Annaba",
-  "Guelma",
-  "Constantine",
-  "Médéa",
-  "Mostaganem",
-  "M'Sila",
-  "Mascara",
-  "Ouargla",
-  "Oran",
-  "El Bayadh",
-  "Illizi",
-  "Bordj Bou Arreridj",
-  "Boumerdès",
-  "El Tarf",
-  "Tindouf",
-  "Tissemsilt",
-  "El Oued",
-  "Khenchela",
-  "Souk Ahras",
-  "Tipaza",
-  "Mila",
-  "Aïn Defla",
-  "Naâma",
-  "Aïn Témouchent",
-  "Ghardaïa",
-  "Relizane",
-]
-
-const COMMUNES: Record<string, string[]> = {
-  Adrar: ["Adrar", "Reggane", "Timimoun", "Aoulef", "Bordj Badji Mokhtar"],
-  Chlef: ["Chlef", "Ténès", "El Karimia", "Oued Fodda", "Boukadir"],
-  Laghouat: ["Laghouat", "Aflou", "Ksar El Hirane", "Hassi R'Mel"],
-  "Oum El Bouaghi": ["Oum El Bouaghi", "Aïn Beïda", "Aïn M'lila", "Meskiana"],
-  Batna: ["Batna", "Barika", "Arris", "Merouana", "N'Gaous"],
-  Béjaïa: ["Béjaïa", "Akbou", "Amizour", "El Kseur", "Sidi Aïch"],
-  Biskra: ["Biskra", "Tolga", "Sidi Okba", "Ouled Djellal", "El Kantara"],
-  Béchar: ["Béchar", "Abadla", "Beni Ounif", "Kenadsa", "Taghit"],
-  Blida: ["Blida", "Boufarik", "Bougara", "Bouinan", "Larbaa"],
-  Bouira: ["Bouira", "Lakhdaria", "Sour El Ghozlane", "Aïn Bessem"],
-  Tamanrasset: ["Tamanrasset", "In Salah", "In Guezzam", "Tazrouk"],
-  Tébessa: ["Tébessa", "Bir El Ater", "Cheria", "El Ouenza", "Hammamet"],
-  Tlemcen: ["Tlemcen", "Maghnia", "Ghazaouet", "Remchi", "Sebdou"],
-  Tiaret: ["Tiaret", "Sougueur", "Frenda", "Ksar Chellala", "Mahdia"],
-  "Tizi Ouzou": ["Tizi Ouzou", "Azazga", "Draa Ben Khedda", "Tigzirt", "Boghni"],
-  Alger: [
-    "Alger Centre",
-    "Bab El Oued",
-    "Kouba",
-    "Hussein Dey",
-    "Dar El Beida",
-    "Baraki",
-    "Rouiba",
-    "Birkhadem",
-    "El Harrach",
-    "Birtouta",
-    "Zeralda",
-    "Draria",
-    "Cheraga",
-    "Bouzareah",
-    "El Biar",
-    "Hydra",
-  ],
-  Djelfa: ["Djelfa", "Aïn Oussera", "Messaad", "Hassi Bahbah", "Birine"],
-  Jijel: ["Jijel", "El Milia", "Taher", "Chekfa", "El Aouana"],
-  Sétif: ["Sétif", "El Eulma", "Aïn Arnat", "Aïn Oulmene", "Bougaa"],
-  Saïda: ["Saïda", "Aïn El Hadjar", "Ouled Khaled", "Youb"],
-  Skikda: ["Skikda", "Tamalous", "El Harrouch", "Azzaba", "Collo"],
-  "Sidi Bel Abbès": ["Sidi Bel Abbès", "Telagh", "Ben Badis", "Tessala"],
-  Annaba: ["Annaba", "El Hadjar", "Berrahal", "El Bouni", "Seraïdi"],
-  Guelma: ["Guelma", "Héliopolis", "Hammam Debagh", "Oued Zenati"],
-  Constantine: ["Constantine", "El Khroub", "Aïn Smara", "Zighoud Youcef", "Hamma Bouziane"],
-  Médéa: ["Médéa", "Berrouaghia", "Ksar Boukhari", "El Omaria", "Tablat"],
-  Mostaganem: ["Mostaganem", "Aïn Tedeles", "Sidi Ali", "Hassi Mameche"],
-  "M'Sila": ["M'Sila", "Bou Saada", "Sidi Aïssa", "Aïn El Melh", "Magra"],
-  Mascara: ["Mascara", "Sig", "Ghriss", "Tighennif", "Mohammadia"],
-  Ouargla: ["Ouargla", "Touggourt", "Hassi Messaoud", "Rouissat", "Tebesbest"],
-  Oran: ["Oran", "Bir El Djir", "Es Senia", "Arzew", "Aïn El Turck", "Bethioua", "Sidi Chami"],
-  "El Bayadh": ["El Bayadh", "Brezina", "Bogtob", "El Abiodh Sidi Cheikh"],
-  Illizi: ["Illizi", "Djanet", "Bordj Omar Driss", "Debdeb"],
-  "Bordj Bou Arreridj": ["Bordj Bou Arreridj", "Ras El Oued", "Bordj Ghdir", "Medjana"],
-  Boumerdès: ["Boumerdès", "Dellys", "Boudouaou", "Khemis El Khechna", "Thenia"],
-  "El Tarf": ["El Tarf", "Ben M'Hidi", "Besbes", "El Kala", "Bouhadjar"],
-  Tindouf: ["Tindouf", "Oum El Assel"],
-  Tissemsilt: ["Tissemsilt", "Theniet El Had", "Khemisti", "Bordj Bounaama"],
-  "El Oued": ["El Oued", "Robbah", "Djamaa", "Debila", "Kouinine"],
-  Khenchela: ["Khenchela", "Babar", "Aïn Touila", "Chechar", "El Hamma"],
-  "Souk Ahras": ["Souk Ahras", "Sedrata", "Taoura", "Mdaourouch", "Heddada"],
-  Tipaza: ["Tipaza", "Cherchell", "Hadjout", "Kolea", "Fouka"],
-  Mila: ["Mila", "Chelghoum Laïd", "Ferdjioua", "Tadjenanet", "Sidi Merouane"],
-  "Aïn Defla": ["Aïn Defla", "Khemis Miliana", "El Attaf", "Djendel", "Boumedfaa"],
-  Naâma: ["Naâma", "Mecheria", "Aïn Sefra", "Moghrar"],
-  "Aïn Témouchent": ["Aïn Témouchent", "Hammam Bou Hadjar", "Beni Saf", "El Malah"],
-  Ghardaïa: ["Ghardaïa", "Berriane", "El Menia", "Metlili", "Guerrara"],
-  Relizane: ["Relizane", "Oued Rhiou", "Djidiouia", "Yellel", "Mazouna"],
-}
 
 export default function CheckoutForm() {
   const [quantity, setQuantity] = useState(1)
@@ -356,7 +240,7 @@ export default function CheckoutForm() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[center_right_0.75rem] pr-10"
                 >
                   <option value="">الولاية Wilaya</option>
-                  {WILAYAS.map((w) => (
+                  {ALGERIA_WILAYAS.map((w) => (
                     <option key={w} value={w}>
                       {w}
                     </option>
@@ -378,7 +262,7 @@ export default function CheckoutForm() {
                 >
                   <option value="">البلدية Commune</option>
                   {wilaya &&
-                    COMMUNES[wilaya as keyof typeof COMMUNES]?.map((c) => (
+                    getCommunesByWilaya(wilaya)?.map((c) => (
                       <option key={c} value={c}>
                         {c}
                       </option>
