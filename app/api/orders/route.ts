@@ -13,9 +13,10 @@ export async function POST(request: Request) {
     // Create WooCommerce order format using config
     const { orders } = wooConfig
     const wooOrder = {
+      status:"processing",
       payment_method: orders.paymentMethod,
       payment_method_title: orders.paymentMethodTitle,
-      set_paid: true,
+      set_paid: false,
       billing: {
         first_name: orderData.prenom,
         phone: orderData.telephone,
