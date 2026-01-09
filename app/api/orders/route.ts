@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     const wooOrder = {
       payment_method: orders.paymentMethod,
       payment_method_title: orders.paymentMethodTitle,
-      set_paid: false,
+      set_paid: true,
       billing: {
         first_name: orderData.prenom,
         phone: orderData.telephone,
