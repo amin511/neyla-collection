@@ -139,6 +139,31 @@ export default function CheckoutForm() {
       const result = await response.json()
       console.log("[v0] Order created:", result)
 
+      // Sauvegarder les détails de la commande pour la page de remerciement
+      const orderDetailsForThankYou = {
+        product: {
+          id: cartItems[0]?.id,
+          name: cartItems.map(item => item.name).join(", "),
+          price: sousTotal.toFixed(2),
+          image: cartItems[0]?.image || "",
+          size: cartItems.map(item => item.size).filter(Boolean).join(", ") || null,
+        },
+        quantity: cartItems.reduce((sum, item) => sum + item.quantity, 0),
+        items: cartItems,
+        billing: {
+          prenom: formData.prenom,
+          telephone: formData.telephone,
+          wilaya,
+          commune,
+          adresse: formData.adresse,
+        },
+        delivery_method: deliveryMethod,
+        shipping_cost: livraison,
+        subtotal: sousTotal,
+        total,
+      }
+      localStorage.setItem("lastOrder", JSON.stringify(orderDetailsForThankYou))
+
       // Clear cart
       localStorage.removeItem("cartItem")
       localStorage.removeItem("cartItems")

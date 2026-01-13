@@ -10,6 +10,37 @@ export async function POST(request: Request) {
 
     const apiUrl = `${storeUrl}/wp-json/wc/v3/orders`
 
+    // Préparer les line_items avec les tailles
+    const lineItems = orderData.items
+      ? orderData.items.map((item: any) => ({
+        product_id: item.id,
+        quantity: item.quantity,
+        // Ajouter la taille comme meta_data si elle existe
+        ...(item.size && {
+          meta_data: [
+            {
+              key: "Taille",
+              value: item.size,
+            },
+          ],
+        }),
+      }))
+      : [
+        {
+          product_id: orderData.product_id,
+          quantity: orderData.quantity,
+          // Ajouter la taille comme meta_data si elle existe
+          ...(orderData.size && {
+            meta_data: [
+              {
+                key: "Taille",
+                value: orderData.size,
+              },
+            ],
+          }),
+        },
+      ]
+
     // Create WooCommerce order format using config
     const { orders } = wooConfig
     const wooOrder = {
@@ -31,17 +62,27 @@ export async function POST(request: Request) {
         state: orderData.wilaya,
         country: orders.defaultCountry,
       },
-      line_items: [
-        {
-          product_id: orderData.product_id,
-          quantity: orderData.quantity,
-        },
-      ],
+      line_items: lineItems,
       shipping_lines: [
         {
           method_id: orders.shippingMethod,
-          method_title: orders.shippingTitle,
-          total: "0",
+          method_title: orderData.delivery_method === "domicile" ? "Livraison à domicile" : "Stop Desk",
+          total: String(orderData.shipping_cost || 0),
+        },
+      ],
+      // Définir les meta données de la commande
+      meta_data: [
+        {
+          key: "_shipping_cost",
+          value: String(orderData.shipping_cost || 0),
+        },
+        {
+          key: "_order_subtotal",
+          value: String(orderData.subtotal || 0),
+        },
+        {
+          key: "_delivery_method",
+          value: orderData.delivery_method || "domicile",
         },
       ],
     }
