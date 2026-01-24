@@ -16,6 +16,7 @@ import {
   type DeliveryMethod,
 } from "@/lib/config"
 import { useWilayaShipping, type WilayaShippingMethod } from "@/lib/hooks/useShipping"
+import { fbEvent } from "@/components/facebook-pixel"
 
 export default function CheckoutForm() {
   const [quantity, setQuantity] = useState(1)
@@ -43,6 +44,12 @@ export default function CheckoutForm() {
       // Keep single item for backward compatibility
       if (parsedItems.length > 0) {
         setProduct(parsedItems[0])
+        // Track InitiateCheckout event
+        fbEvent("InitiateCheckout", {
+          content_ids: parsedItems.map((item: any) => item.id.toString()),
+          content_type: "product",
+          num_items: parsedItems.length,
+        })
       }
     }
   }, [])

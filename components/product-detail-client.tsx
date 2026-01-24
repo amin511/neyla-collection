@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, TouchEvent } from "react"
+import { useState, useRef, TouchEvent, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -8,6 +8,7 @@ import { Ruler, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatPrice, siteConfig } from "@/lib/config"
 import ProductCheckoutForm from "@/components/product-checkout-form"
+import { fbEvent } from "@/components/facebook-pixel"
 
 interface ProductImage {
   id: number
@@ -60,6 +61,15 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
   const [addedToCart, setAddedToCart] = useState(false)
   const router = useRouter()
 
+  // Track ViewContent event on product page load
+  useEffect(() => {
+    fbEvent("ViewContent", {
+      content_name: product.name,
+      content_ids: [product.id.toString()],
+      content_type: "product",
+    })
+  }, [product.id, product.name])
+
   // Get checkout mode from config
   const checkoutMode = siteConfig.checkoutMode
   const showForm = checkoutMode === "form" || checkoutMode === "both"
@@ -103,6 +113,13 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
 
     // Also keep single item for backward compatibility
     localStorage.setItem("cartItem", JSON.stringify(newItem))
+
+    // Track AddToCart event
+    fbEvent("AddToCart", {
+      content_name: product.name,
+      content_ids: [product.id.toString()],
+      content_type: "product",
+    })
 
     window.dispatchEvent(new Event("cartUpdated"))
 

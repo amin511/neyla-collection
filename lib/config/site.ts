@@ -86,6 +86,12 @@ export const siteConfig = {
         multiLanguage: false,
     },
 
+    // Analytics & Tracking
+    analytics: {
+        facebookPixelId: process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || "",
+        // googleAnalyticsId: "", // Ready for future use
+    },
+
     /**
      * Checkout Mode Configuration
      * Defines how users can purchase products

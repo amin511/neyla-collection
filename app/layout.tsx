@@ -4,6 +4,7 @@ import { Assistant, Playfair_Display } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { siteConfig } from "@/lib/config"
 import { ShippingPreloader } from "@/components/shipping-preloader"
+import { FacebookPixel } from "@/components/facebook-pixel"
 import "./globals.css"
 
 const assistant = Assistant({
@@ -35,6 +36,7 @@ export default function RootLayout({
         <ShippingPreloader />
         {children}
         <Analytics />
+        <FacebookPixel />
       </body>
     </html>
   )

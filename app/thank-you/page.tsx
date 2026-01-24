@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { CheckCircle, Package, MapPin, Phone, User, Truck, CreditCard, Sparkles } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { fbEvent } from "@/components/facebook-pixel"
 
 interface OrderDetails {
   product: {
@@ -103,7 +104,15 @@ function ThankYouContent() {
     // Récupérer les détails de la commande depuis localStorage
     const savedOrder = localStorage.getItem("lastOrder")
     if (savedOrder) {
-      setOrderDetails(JSON.parse(savedOrder))
+      const orderData = JSON.parse(savedOrder)
+      setOrderDetails(orderData)
+
+      // Track Purchase event
+      fbEvent("Purchase", {
+        content_ids: orderData.items?.map((item: any) => item.id.toString()) || [orderData.product?.id?.toString()],
+        content_type: "product",
+        num_items: orderData.quantity || 1,
+      })
     }
 
     // Animation d'entrée
