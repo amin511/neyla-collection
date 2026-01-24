@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { Suspense, useEffect } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 import Script from "next/script"
 import { siteConfig } from "@/lib/config"
@@ -17,7 +17,7 @@ declare global {
     }
 }
 
-export function FacebookPixel() {
+function FacebookPixelPageView() {
     const pathname = usePathname()
     const searchParams = useSearchParams()
     const pixelId = siteConfig.analytics?.facebookPixelId
@@ -28,6 +28,12 @@ export function FacebookPixel() {
             window.fbq("track", "PageView")
         }
     }, [pathname, searchParams, pixelId])
+
+    return null
+}
+
+export function FacebookPixel() {
+    const pixelId = siteConfig.analytics?.facebookPixelId
 
     // Ne pas rendre si pas de Pixel ID configuré
     if (!pixelId) return null
@@ -57,6 +63,9 @@ export function FacebookPixel() {
                     alt=""
                 />
             </noscript>
+            <Suspense fallback={null}>
+                <FacebookPixelPageView />
+            </Suspense>
         </>
     )
 }
