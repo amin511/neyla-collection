@@ -88,6 +88,41 @@ async function getCategories() {
 }
 
 /**
+ * Récupère les variations d'un produit variable
+ * @see https://woocommerce.github.io/woocommerce-rest-api-docs/?javascript#list-all-product-variations
+ */
+async function getProductVariations(productId: string, productType?: string) {
+  // Ne récupère les variations que pour les produits variables
+  if (productType !== 'variable') {
+    return []
+  }
+
+  try {
+    const { storeUrl, authHeader } = getWooCredentials()
+    const apiUrl = `${storeUrl}/wp-json/wc/v3/products/${productId}/variations?per_page=100`
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        Authorization: authHeader,
+      },
+      cache: "force-cache", // SSG: Cache au build time
+    })
+
+    if (!response.ok) {
+      console.error("[v0] Error fetching variations:", response.status)
+      return []
+    }
+
+    const variations = await response.json()
+    console.log(`[v0] Fetched ${variations.length} variations for product ${productId}`)
+    return variations
+  } catch (error) {
+    console.error("[v0] Error fetching product variations:", error)
+    return []
+  }
+}
+
+/**
  * Génère les paramètres statiques pour TOUS les produits au build time
  * Utilise la pagination pour récupérer jusqu'à 1000 produits
  */
@@ -174,20 +209,30 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [product, relatedProducts, categories] = await Promise.all([
-    getProduct(id),
-    getRelatedProducts(id),
-    getCategories()
-  ])
+
+  // D'abord récupérer le produit pour connaître son type
+  const product = await getProduct(id)
 
   if (!product) {
     notFound()
   }
 
+  // Ensuite récupérer les données complémentaires en parallèle
+  const [relatedProducts, categories, variations] = await Promise.all([
+    getRelatedProducts(id),
+    getCategories(),
+    getProductVariations(id, product.type)
+  ])
+
   return (
     <main className="min-h-screen bg-background">
       <Header />
-      <ProductDetailClient product={product} relatedProducts={relatedProducts} categories={categories} />
+      <ProductDetailClient
+        product={product}
+        relatedProducts={relatedProducts}
+        categories={categories}
+        variations={variations}
+      />
       <Footer />
     </main>
   )

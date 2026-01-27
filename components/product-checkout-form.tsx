@@ -21,6 +21,8 @@ interface ProductCheckoutFormProps {
     price: string
     image: string
     size?: string
+    color?: string
+    variationId?: number
   }
 }
 
@@ -83,6 +85,7 @@ export default function ProductCheckoutForm({ product }: ProductCheckoutFormProp
     try {
       const orderPayload = {
         product_id: product.id,
+        variation_id: product.variationId || null,
         quantity,
         prenom: formData.prenom,
         telephone: formData.telephone,
@@ -93,6 +96,7 @@ export default function ProductCheckoutForm({ product }: ProductCheckoutFormProp
         subtotal: sousTotal,
         total,
         size: product.size,
+        color: product.color,
       }
 
       const response = await fetch("/api/orders", {

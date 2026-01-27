@@ -116,6 +116,7 @@ export default function CheckoutForm() {
         product_image: cartItems[0]?.image || '',
         price: sousTotal.toFixed(2),
         size: cartItems.map(item => `${item.name}: ${item.size || 'N/A'}`).join(', '),
+        color: cartItems.map(item => `${item.name}: ${item.color || 'N/A'}`).join(', '),
         quantity: cartItems.reduce((sum, item) => sum + item.quantity, 0),
         items: cartItems,
         prenom: formData.prenom,
@@ -154,6 +155,7 @@ export default function CheckoutForm() {
           price: sousTotal.toFixed(2),
           image: cartItems[0]?.image || "",
           size: cartItems.map(item => item.size).filter(Boolean).join(", ") || null,
+          color: cartItems.map(item => item.color).filter(Boolean).join(", ") || null,
         },
         quantity: cartItems.reduce((sum, item) => sum + item.quantity, 0),
         items: cartItems,
@@ -429,7 +431,7 @@ export default function CheckoutForm() {
             {/* Cart Items */}
             <div className="space-y-3 mb-4 pb-4 border-b border-gray-200">
               {cartItems.map((item, index) => (
-                <div key={`${item.id}-${item.size}-${index}`} className="flex items-start gap-3">
+                <div key={`${item.id}-${item.size}-${item.color}-${index}`} className="flex items-start gap-3">
                   <div className="relative w-16 h-20 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
                     <div className="absolute -top-2 -right-2 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium z-10">
                       {item.quantity}
@@ -438,6 +440,7 @@ export default function CheckoutForm() {
                   </div>
                   <div className="flex-1">
                     <h4 className="font-medium text-sm mb-1">{item.name}</h4>
+                    {item.color && <p className="text-xs text-gray-500">Couleur: {item.color}</p>}
                     {item.size && <p className="text-xs text-gray-500">Taille: {item.size}</p>}
                     <p className="text-xs text-gray-600 mt-1">
                       DA {(Number.parseFloat(item.price) * item.quantity).toLocaleString()}.00

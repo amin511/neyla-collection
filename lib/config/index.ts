@@ -25,6 +25,7 @@ export {
     type DeliveryMethodInfo,
 } from "./shipping"
 export { ALGERIA_WILAYAS, ALGERIA_COMMUNES, getCommunesByWilaya, isValidWilaya, isValidCommune, type AlgeriaWilaya } from "./country"
+export { colorMap, getColorValue, isKnownColor, extendColorMap, type ColorMap } from "./colors"
 
 /**
  * Price formatting utility using site config

@@ -22,6 +22,7 @@ interface CartItem {
   name: string
   price: string
   size: string
+  color?: string
   image: string
   quantity: number
 }
@@ -128,7 +129,7 @@ export default function CartPage() {
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
               {cartItems.map((item, index) => (
-                <div key={`${item.id}-${item.size}-${index}`} className="border border-border rounded-sm overflow-hidden bg-card">
+                <div key={`${item.id}-${item.size}-${item.color}-${index}`} className="border border-border rounded-sm overflow-hidden bg-card">
                   {/* Item */}
                   <div className="p-4 md:p-6">
                     <div className="flex gap-4 md:gap-6">
@@ -149,6 +150,11 @@ export default function CartPage() {
                             <h3 className="font-medium text-foreground mb-1 line-clamp-2">
                               {item.name}
                             </h3>
+                            {item.color && (
+                              <p className="text-sm text-muted-foreground mb-1">
+                                Couleur: <span className="text-foreground">{item.color}</span>
+                              </p>
+                            )}
                             {item.size && (
                               <p className="text-sm text-muted-foreground mb-2">
                                 Taille: <span className="text-foreground">{item.size}</span>

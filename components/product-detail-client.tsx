@@ -6,7 +6,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Ruler, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { formatPrice, siteConfig } from "@/lib/config"
+import { formatPrice, siteConfig, getColorValue } from "@/lib/config"
 import ProductCheckoutForm from "@/components/product-checkout-form"
 import { fbEvent } from "@/components/facebook-pixel"
 
@@ -22,6 +22,24 @@ interface ProductAttribute {
   options: string[]
 }
 
+interface VariationAttribute {
+  id: number
+  name: string
+  option: string
+}
+
+interface ProductVariation {
+  id: number
+  price: string
+  regular_price: string
+  sale_price: string
+  stock_status: string
+  stock_quantity: number | null
+  sku: string
+  image: ProductImage | null
+  attributes: VariationAttribute[]
+}
+
 interface Product {
   id: number
   name: string
@@ -31,6 +49,7 @@ interface Product {
   images: ProductImage[]
   attributes: ProductAttribute[]
   stock_status: string
+  type?: string // 'simple' | 'variable' | 'grouped' | 'external'
 }
 
 interface RelatedProduct {
@@ -51,18 +70,43 @@ interface ProductDetailClientProps {
   product: Product
   relatedProducts?: RelatedProduct[]
   categories?: Category[]
+  variations?: ProductVariation[]
 }
 
-export default function ProductDetailClient({ product, relatedProducts = [], categories = [] }: ProductDetailClientProps) {
+export default function ProductDetailClient({ product, relatedProducts = [], categories = [], variations = [] }: ProductDetailClientProps) {
   const [selectedSize, setSelectedSize] = useState<string>("")
+  const [selectedColor, setSelectedColor] = useState<string>("")
   const [showSizeGuide, setShowSizeGuide] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [showLightbox, setShowLightbox] = useState(false)
   const [addedToCart, setAddedToCart] = useState(false)
-  const router = useRouter()
+  const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null)
+  const router = useRouter();
+
+  // Find matching variation when attributes are selected
+  useEffect(() => {
+    if (variations.length === 0) return
+
+    const matchingVariation = variations.find((variation) => {
+      return variation.attributes.every((attr) => {
+        const attrName = attr.name.toLowerCase()
+        if (attrName === 'size' || attrName === 'taille') {
+          return !selectedSize || attr.option === selectedSize
+        }
+        if (attrName === 'color' || attrName === 'couleur') {
+          return !selectedColor || attr.option === selectedColor
+        }
+        return true
+      })
+    })
+
+    setSelectedVariation(matchingVariation || null)
+    console.log('Selected variation:', matchingVariation)
+  }, [selectedSize, selectedColor, variations])
 
   // Track ViewContent event on product page load
   useEffect(() => {
+    console.log(product, "product details");
     fbEvent("ViewContent", {
       content_name: product.name,
       content_ids: [product.id.toString()],
@@ -82,22 +126,30 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
       return
     }
 
+    if (colors.length > 0 && !selectedColor) {
+      alert("Veuillez sélectionner une couleur")
+      return
+    }
+
     const newItem = {
       id: product.id,
       name: product.name,
-      price: product.price,
+      price: selectedVariation?.price || product.price,
       size: selectedSize,
-      image: mainImage,
+      color: selectedColor,
+      image: selectedVariation?.image?.src || mainImage,
       quantity: 1,
+      variationId: selectedVariation?.id || null,
+      sku: selectedVariation?.sku || null,
     }
 
     // Get existing cart items
     const existingCart = localStorage.getItem("cartItems")
     let cartItems = existingCart ? JSON.parse(existingCart) : []
 
-    // Check if item with same id and size already exists
+    // Check if item with same id, size and color already exists
     const existingItemIndex = cartItems.findIndex(
-      (item: any) => item.id === newItem.id && item.size === newItem.size
+      (item: any) => item.id === newItem.id && item.size === newItem.size && item.color === newItem.color
     )
 
     if (existingItemIndex > -1) {
@@ -180,11 +232,17 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
   )
   const sizes = sizeAttribute?.options || []
 
+  // Get color attribute
+  const colorAttribute = product.attributes?.find(
+    (attr) => attr.name.toLowerCase() === "color" || attr.name.toLowerCase() === "couleur",
+  )
+  const colors = colorAttribute?.options || []
+
   // Get all images
   const productImages = product.images?.length > 0 ? product.images : [{ id: 0, src: "/placeholder.svg?height=600&width=600", alt: product.name }]
   const mainImage = productImages[selectedImageIndex]?.src || "/placeholder.svg?height=600&width=600"
 
-  // Calculate visible thumbnails and remaining count
+  // Calculate visible thumbn8ails and remaining count
   const visibleThumbnails = productImages.slice(0, MAX_VISIBLE_THUMBNAILS)
   const remainingCount = productImages.length - MAX_VISIBLE_THUMBNAILS
 
@@ -263,7 +321,7 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                 >
                   {productImages.map((image, index) => (
                     <div
-                      key={image.id}
+                      key={`slider-${index}-${image.id}`}
                       className="w-full shrink-0 cursor-zoom-in"
                       onClick={() => setShowLightbox(true)}
                     >
@@ -324,7 +382,7 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                 <div className="grid grid-cols-5 gap-2">
                   {visibleThumbnails.map((image, index) => (
                     <button
-                      key={image.id}
+                      key={`thumb-${index}-${image.id}`}
                       onClick={() => goToImage(index)}
                       className={`relative aspect-[3/4] rounded-sm overflow-hidden transition-all duration-200 ${selectedImageIndex === index
                         ? "ring-2 ring-foreground ring-offset-2 opacity-100"
@@ -367,13 +425,43 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                 className="flex items-baseline gap-3 opacity-0 animate-fade-in-rise"
                 style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}
               >
-                <span className="text-2xl font-medium">{formatPrice(Number.parseFloat(product.price))}</span>
-                {product.regular_price && Number.parseFloat(product.regular_price) > Number.parseFloat(product.price) && (
-                  <span className="text-lg text-muted-foreground line-through">
-                    {formatPrice(Number.parseFloat(product.regular_price))}
-                  </span>
-                )}
+                <span className="text-2xl font-medium">
+                  {formatPrice(Number.parseFloat(selectedVariation?.price || product.price))}
+                </span>
+                {(selectedVariation?.regular_price || product.regular_price) &&
+                  Number.parseFloat(selectedVariation?.regular_price || product.regular_price) >
+                  Number.parseFloat(selectedVariation?.price || product.price) && (
+                    <span className="text-lg text-muted-foreground line-through">
+                      {formatPrice(Number.parseFloat(selectedVariation?.regular_price || product.regular_price))}
+                    </span>
+                  )}
               </div>
+
+              {/* Color Selection */}
+              {colors.length > 0 && (
+                <div
+                  className="space-y-3 opacity-0 animate-fade-in-rise"
+                  style={{ animationDelay: '350ms', animationFillMode: 'forwards' }}
+                >
+                  <div className="text-sm font-medium">Couleur {selectedColor && <span className="font-normal text-muted-foreground">: {selectedColor}</span>}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {colors.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => setSelectedColor(color)}
+                        title={color}
+                        className={`w-10 h-10 rounded-full border-2 transition-all ${selectedColor === color
+                          ? "ring-2 ring-offset-2 ring-foreground border-foreground"
+                          : "border-border hover:border-foreground"
+                          }`}
+                        style={{ backgroundColor: getColorValue(color) }}
+                      >
+                        <span className="sr-only">{color}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Size Selection */}
               {sizes.length > 0 && (
@@ -408,18 +496,22 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                 Guides des tailles
               </button>
 
-              {/* Size validation message */}
-              {sizes.length > 0 && !selectedSize && (
+              {/* Validation messages */}
+              {(colors.length > 0 && !selectedColor) || (sizes.length > 0 && !selectedSize) ? (
                 <div
                   className="text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg text-center opacity-0 animate-fade-in-rise"
                   style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}
                 >
-                  Veuillez sélectionner une taille pour continuer
+                  {colors.length > 0 && !selectedColor && sizes.length > 0 && !selectedSize
+                    ? "Veuillez sélectionner une couleur et une taille pour continuer"
+                    : colors.length > 0 && !selectedColor
+                      ? "Veuillez sélectionner une couleur pour continuer"
+                      : "Veuillez sélectionner une taille pour continuer"}
                 </div>
-              )}
+              ) : null}
 
               {/* Checkout Section - Based on checkoutMode config */}
-              {(sizes.length === 0 || selectedSize) && (
+              {(sizes.length === 0 || selectedSize) && (colors.length === 0 || selectedColor) && (
                 <div
                   className="space-y-4 opacity-0 animate-fade-in-rise"
                   style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}
@@ -469,9 +561,11 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                       product={{
                         id: product.id,
                         name: product.name,
-                        price: product.price,
-                        image: mainImage,
+                        price: selectedVariation?.price || product.price,
+                        image: selectedVariation?.image?.src || mainImage,
                         size: selectedSize,
+                        color: selectedColor,
+                        variationId: selectedVariation?.id,
                       }}
                     />
                   )}
@@ -487,12 +581,25 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
               </div>
 
               {/* Stock Status */}
-              {product.stock_status === "instock" && (
-                <div className="text-sm text-green-600 dark:text-green-400">En stock</div>
-              )}
-              {product.stock_status === "outofstock" && (
-                <div className="text-sm text-red-600 dark:text-red-400">Épuisé</div>
-              )}
+              {(() => {
+                const stockStatus = selectedVariation?.stock_status || product.stock_status
+                const stockQty = selectedVariation?.stock_quantity
+
+                if (stockStatus === "instock") {
+                  return (
+                    <div className="text-sm text-green-600 dark:text-green-400">
+                      En stock {stockQty !== null && stockQty !== undefined && `(${stockQty} disponibles)`}
+                    </div>
+                  )
+                }
+                if (stockStatus === "outofstock") {
+                  return <div className="text-sm text-red-600 dark:text-red-400">Épuisé</div>
+                }
+                if (stockStatus === "onbackorder") {
+                  return <div className="text-sm text-yellow-600 dark:text-yellow-400">Sur commande</div>
+                }
+                return null
+              })()}
             </div>
           </div>
         </div>
@@ -579,7 +686,7 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
               style={{ transform: `translateX(-${selectedImageIndex * 100}%)` }}
             >
               {productImages.map((image, index) => (
-                <div key={image.id} className="w-full shrink-0 flex items-center justify-center">
+                <div key={`lightbox-${index}-${image.id}`} className="w-full shrink-0 flex items-center justify-center">
                   <Image
                     src={image.src || "/placeholder.svg"}
                     alt={image.alt || product.name}
@@ -607,7 +714,7 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 max-w-[90vw] overflow-x-auto px-4 py-2">
             {productImages.map((image, index) => (
               <button
-                key={image.id}
+                key={`lightbox-thumb-${index}-${image.id}`}
                 onClick={(e) => { e.stopPropagation(); goToImage(index); }}
                 className={`relative shrink-0 w-16 h-20 rounded-sm overflow-hidden transition-all duration-200 ${selectedImageIndex === index
                   ? "ring-2 ring-white opacity-100"

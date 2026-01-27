@@ -1,4 +1,5 @@
 import { getWooCredentials, wooConfig } from "@/lib/config"
+import { stat } from "fs"
 
 export async function POST(request: Request) {
   try {
@@ -10,40 +11,55 @@ export async function POST(request: Request) {
 
     const apiUrl = `${storeUrl}/wp-json/wc/v3/orders`
 
-    // Préparer les line_items avec les tailles
+    // Préparer les line_items avec les tailles et couleurs
+    // Note: Si variation_id est fourni, WooCommerce ajoute automatiquement les attributs
+    // On n'ajoute les meta_data que pour les produits simples (sans variation)
     const lineItems = orderData.items
-      ? orderData.items.map((item: any) => ({
-        product_id: item.id,
-        quantity: item.quantity,
-        // Ajouter la taille comme meta_data si elle existe
-        ...(item.size && {
-          meta_data: [
-            {
-              key: "Taille",
-              value: item.size,
-            },
-          ],
-        }),
-      }))
-      : [
-        {
-          product_id: orderData.product_id,
-          quantity: orderData.quantity,
-          // Ajouter la taille comme meta_data si elle existe
-          ...(orderData.size && {
-            meta_data: [
-              {
-                key: "Taille",
-                value: orderData.size,
-              },
-            ],
-          }),
-        },
-      ]
+      ? orderData.items.map((item: any) => {
+        const hasVariation = !!item.variationId
+        const metaData = []
+        // Ajouter taille/couleur uniquement si pas de variation (produit simple)
+        if (!hasVariation) {
+          if (item.size) {
+            metaData.push({ key: "Taille", value: item.size })
+          }
+          if (item.color) {
+            metaData.push({ key: "Couleur", value: item.color })
+          }
+        }
+        return {
+          product_id: item.id,
+          variation_id: item.variationId || undefined,
+          quantity: item.quantity,
+          ...(metaData.length > 0 && { meta_data: metaData }),
+        }
+      })
+      : (() => {
+        const hasVariation = !!orderData.variation_id
+        const metaData = []
+        // Ajouter taille/couleur uniquement si pas de variation (produit simple)
+        if (!hasVariation) {
+          if (orderData.size) {
+            metaData.push({ key: "Taille", value: orderData.size })
+          }
+          if (orderData.color) {
+            metaData.push({ key: "Couleur", value: orderData.color })
+          }
+        }
+        return [
+          {
+            product_id: orderData.product_id,
+            variation_id: orderData.variation_id || undefined,
+            quantity: orderData.quantity,
+            ...(metaData.length > 0 && { meta_data: metaData }),
+          },
+        ]
+      })()
 
     // Create WooCommerce order format using config
     const { orders } = wooConfig
     const wooOrder = {
+      status: "processing",
       payment_method: orders.paymentMethod,
       payment_method_title: orders.paymentMethodTitle,
       set_paid: false,
