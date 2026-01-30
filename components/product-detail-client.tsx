@@ -85,6 +85,12 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
 
   // Find matching variation when attributes are selected
   useEffect(() => {
+    console.log("=== VARIATION DEBUG ===")
+    console.log("Available variations:", variations)
+    console.log("Selected Size:", selectedSize)
+    console.log("Selected Color:", selectedColor)
+    console.log("Product images:", product.images)
+
     if (variations.length === 0) return
 
     const matchingVariation = variations.find((variation) => {
@@ -101,8 +107,30 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
     })
 
     setSelectedVariation(matchingVariation || null)
-    console.log('Selected variation:', matchingVariation)
-  }, [selectedSize, selectedColor, variations])
+    console.log('Matching variation found:', matchingVariation)
+    console.log('Variation image:', matchingVariation?.image)
+
+    // Si la variation a une image, naviguer vers elle
+    if (matchingVariation?.image?.src) {
+      console.log("Looking for variation image in gallery...")
+
+      // Vérifier si l'image existe dans la galerie du produit
+      const variationImageIndex = product.images?.findIndex(
+        (img) => img.src === matchingVariation.image?.src || img.id === matchingVariation.image?.id
+      )
+
+      if (variationImageIndex !== undefined && variationImageIndex >= 0) {
+        // L'image existe dans la galerie, y naviguer
+        setSelectedImageIndex(variationImageIndex)
+        console.log("Image found in gallery, navigating to index:", variationImageIndex)
+      } else {
+        // L'image n'est pas dans la galerie, elle sera ajoutée au début (index 0)
+        setSelectedImageIndex(0)
+        console.log("Image not in gallery, will be added at index 0")
+      }
+    }
+    console.log("=== END DEBUG ===")
+  }, [selectedSize, selectedColor, variations, product.images])
 
   // Track ViewContent event on product page load
   useEffect(() => {
@@ -238,8 +266,20 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
   )
   const colors = colorAttribute?.options || []
 
-  // Get all images
-  const productImages = product.images?.length > 0 ? product.images : [{ id: 0, src: "/placeholder.svg?height=600&width=600", alt: product.name }]
+  // Get all images - inclure l'image de la variation si elle n'est pas dans la galerie
+  const baseImages = product.images?.length > 0 ? product.images : [{ id: 0, src: "/placeholder.svg?height=600&width=600", alt: product.name }]
+
+  // Vérifier si l'image de la variation existe dans la galerie
+  const variationImage = selectedVariation?.image
+  const variationImageInGallery = variationImage ? baseImages.some(
+    (img) => img.src === variationImage.src || img.id === variationImage.id
+  ) : true
+
+  // Si l'image de la variation n'est pas dans la galerie, l'ajouter au début
+  const productImages = (!variationImageInGallery && variationImage)
+    ? [{ id: variationImage.id, src: variationImage.src, alt: variationImage.alt || product.name }, ...baseImages]
+    : baseImages
+
   const mainImage = productImages[selectedImageIndex]?.src || "/placeholder.svg?height=600&width=600"
 
   // Calculate visible thumbn8ails and remaining count
@@ -510,6 +550,45 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                 </div>
               ) : null}
 
+              {/* Stock Status - Affiché après sélection des attributs */}
+              {(sizes.length === 0 || selectedSize) && (colors.length === 0 || selectedColor) && (
+                <div
+                  className="opacity-0 animate-fade-in-rise"
+                  style={{ animationDelay: '450ms', animationFillMode: 'forwards' }}
+                >
+                  {(() => {
+                    const stockStatus = selectedVariation?.stock_status || product.stock_status
+                    const stockQty = selectedVariation?.stock_quantity
+
+                    if (stockStatus === "instock") {
+                      return (
+                        <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          En stock {stockQty !== null && stockQty !== undefined && `(${stockQty} disponibles)`}
+                        </div>
+                      )
+                    }
+                    if (stockStatus === "outofstock") {
+                      return (
+                        <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+                          <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                          Rupture de stock
+                        </div>
+                      )
+                    }
+                    if (stockStatus === "onbackorder") {
+                      return (
+                        <div className="flex items-center gap-2 text-sm text-yellow-600 dark:text-yellow-400">
+                          <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                          Sur commande
+                        </div>
+                      )
+                    }
+                    return null
+                  })()}
+                </div>
+              )}
+
               {/* Checkout Section - Based on checkoutMode config */}
               {(sizes.length === 0 || selectedSize) && (colors.length === 0 || selectedColor) && (
                 <div
@@ -579,27 +658,6 @@ export default function ProductDetailClient({ product, relatedProducts = [], cat
                   dangerouslySetInnerHTML={{ __html: product.description }}
                 />
               </div>
-
-              {/* Stock Status */}
-              {(() => {
-                const stockStatus = selectedVariation?.stock_status || product.stock_status
-                const stockQty = selectedVariation?.stock_quantity
-
-                if (stockStatus === "instock") {
-                  return (
-                    <div className="text-sm text-green-600 dark:text-green-400">
-                      En stock {stockQty !== null && stockQty !== undefined && `(${stockQty} disponibles)`}
-                    </div>
-                  )
-                }
-                if (stockStatus === "outofstock") {
-                  return <div className="text-sm text-red-600 dark:text-red-400">Épuisé</div>
-                }
-                if (stockStatus === "onbackorder") {
-                  return <div className="text-sm text-yellow-600 dark:text-yellow-400">Sur commande</div>
-                }
-                return null
-              })()}
             </div>
           </div>
         </div>

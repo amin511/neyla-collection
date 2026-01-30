@@ -59,6 +59,12 @@ export const colorMap: ColorMap = {
     "chocolat": "#7B3F00",
     "crémeux": "#FFFDD0",
     "sable": "#C2B280",
+    "blanc cassé": "#F5F5F0",
+    "brique": "#CB4154",
+    "aubergine": "#614051",
+    "bleu roi": "#4169E1",
+    "bordeau": "#722F37",
+    "champagne": "#F7E7CE",
 
     // English color names
     "black": "#000000",
